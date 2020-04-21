@@ -358,7 +358,7 @@ You can specify how you want the extension to activate by setting the parameter 
 |`perforce.annotate.followBranches` |`boolean`  |Whether to follow branch actions when annotating a file
 |`perforce.annotate.gutterColumns`  |`object`   |**Experimental** Format for annotation summary messages
 |`perforce.changelistSearch.maxResults` | `number` | The maximum number of results to show in the changelist search
-|`perforce.changelistOrder`         |`string`   |Specifies the direction of the chnagelist sorting (`descending`,`ascending`)
+|`perforce.changelistOrder`         |`string`   |Specifies the direction of the changelist sorting (`descending`,`ascending`)
 |`perforce.scmFileChanges`          |`boolean`  |Open file changes when selected in SCM Explorer
 |`perforce.ignoredChangelistPrefix` |`string`   |Specifies the prefix of the changelists to be ignored.
 |`perforce.hideNonWorkspaceFiles`   |`enum`     |Controls how files outside of the current VS Code workspace are shown in the SCM Provider
@@ -416,7 +416,7 @@ However, there is a time limit for this. If you have a slow or distant perforce 
 
 A special command is available to edit and save in one operation, bypassing VS Code's timeout.
 
-Using edit on save ensures that the open completes before it tries to save the file.
+Using this command ensures that the open completes before it tries to save the file.
 
 It's generally not recommended to rebind your ctrl+s keyboard shortcut, due to the small risk that the save never happens if your perforce server never responds, but if you wish, you could rebind your save command like this, to open the file for edit if it's not already open and then save it.
 
