@@ -1,5 +1,12 @@
 # Change log
 
+## [4.2.0] - 2020-04-21
+
+* Add a changelist search to the SCM provider panel. This allows you to find changelists using a similar set of filters to p4 / P4V - [Feedback welcome](https://github.com/mjcrouch/vscode-perforce/issues/104) (#68)
+* More of the changelist description is visible in the SCM provider view
+* Now maintains the current position in the file when opening annotations (#106)
+* Fix an issue where opening the annotations for a different revision of the current file could apply the annotations to the wrong revision
+
 ## [4.1.0] - 2020-04-14
 
 * The extension now checks for perforce clients when you open files outside of the workspace. If a new perforce client is found, it will create an SCM provider so you can manage changelists in that client. This is on by default but can be disabled using the setting `perforce.scm.activateOnFileOpen`
@@ -293,6 +300,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.2.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.1.0...4.2.0
 [4.1.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/mjcrouch/vscode-perforce/compare/3.10.0...4.0.0
 [3.10.0]: https://github.com/mjcrouch/vscode-perforce/compare/3.9.1...3.10.0
