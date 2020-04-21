@@ -8,7 +8,8 @@ import { Display } from "../Display";
 import { DescribedChangelist } from "../api/PerforceApi";
 import { showQuickPickForFile } from "./FileQuickPick";
 import { toReadableDateTime } from "../DateFormatter";
-import { ConfigAccessor } from "../ConfigService";
+import { configAccessor } from "../ConfigService";
+import { focusChangelist } from "../search/ChangelistTreeView";
 
 const nbsp = "\xa0";
 
@@ -18,7 +19,10 @@ export const changeQuickPickProvider: qp.ActionableQuickPickProvider = {
         chnum: string
     ): Promise<qp.ActionableQuickPick> => {
         const resource = qp.asUri(resourceOrStr);
-        const changes = await p4.describe(resource, { chnums: [chnum], omitDiffs: true });
+        const changes = await p4.describe(resource, {
+            chnums: [chnum],
+            omitDiffs: true,
+        });
 
         if (changes.length < 1) {
             Display.showImportantError("Unable to find change details");
@@ -26,10 +30,22 @@ export const changeQuickPickProvider: qp.ActionableQuickPickProvider = {
         }
 
         const change = changes[0];
-        const actions = makeSwarmPick(changes[0]).concat(
-            makeClipboardPicks(resource, changes[0]),
-            makeJobPicks(resource, changes[0]),
-            makeFilePicks(resource, change)
+
+        const shelvedChanges = change.isPending
+            ? await p4.describe(resource, {
+                  omitDiffs: true,
+                  shelved: true,
+                  chnums: [chnum],
+              })
+            : [];
+
+        const shelvedChange = shelvedChanges[0];
+        const actions = makeFocusPick(resource, change).concat(
+            makeSwarmPick(change),
+            makeClipboardPicks(resource, change),
+            makeJobPicks(resource, change),
+            makeFilePicks(resource, change),
+            makeShelvedFilePicks(resource, shelvedChange)
         );
 
         return {
@@ -51,27 +67,39 @@ export async function showQuickPickForChangelist(resource: vscode.Uri, chnum: st
     await qp.showQuickPick("change", resource, chnum);
 }
 
-function getOperationIcon(operation: string) {
+export function getOperationIcon(operation: string) {
     switch (operation) {
         case "add":
-            return "$(diff-added)";
+            return "diff-added";
         case "delete":
         case "move/delete":
         case "purge":
-            return "$(diff-removed)";
+            return "diff-removed";
         case "move/add":
         case "integrate":
         case "branch":
-            return "$(diff-renamed)";
+            return "diff-renamed";
         default:
-            return "$(diff-modified)";
+            return "diff-modified";
     }
 }
 
-function makeSwarmPick(change: DescribedChangelist): qp.ActionableQuickPickItem[] {
-    const config = new ConfigAccessor();
+function makeFocusPick(
+    resource: vscode.Uri,
+    change: DescribedChangelist
+): qp.ActionableQuickPickItem[] {
+    return [
+        {
+            label: "$(multiple-windows) Focus in changelist search view",
+            performAction: () => {
+                focusChangelist(resource, change);
+            },
+        },
+    ];
+}
 
-    const swarmAddr = config.getSwarmLink(change.chnum);
+function makeSwarmPick(change: DescribedChangelist): qp.ActionableQuickPickItem[] {
+    const swarmAddr = configAccessor.getSwarmLink(change.chnum);
     if (!swarmAddr) {
         return [];
     }
@@ -139,7 +167,45 @@ function makeFilePicks(
             return {
                 label:
                     nbsp.repeat(3) +
+                    "$(" +
                     getOperationIcon(file.operation) +
+                    ")" +
+                    " " +
+                    file.depotPath +
+                    "#" +
+                    file.revision,
+                performAction: () => {
+                    const thisUri = PerforceUri.fromDepotPath(
+                        PerforceUri.getUsableWorkspace(uri) ?? uri,
+                        file.depotPath,
+                        file.revision
+                    );
+                    showQuickPickForFile(thisUri);
+                },
+            };
+        })
+    );
+}
+
+function makeShelvedFilePicks(
+    uri: vscode.Uri,
+    change?: DescribedChangelist
+): qp.ActionableQuickPickItem[] {
+    if (!change || change.shelvedFiles.length < 1) {
+        return [];
+    }
+    return [
+        {
+            label: "Shelved files: " + change.shelvedFiles.length,
+        },
+    ].concat(
+        change.shelvedFiles.map<qp.ActionableQuickPickItem>((file) => {
+            return {
+                label:
+                    nbsp.repeat(3) +
+                    "$(" +
+                    getOperationIcon(file.operation) +
+                    ")" +
                     " " +
                     file.depotPath +
                     "#" +

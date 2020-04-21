@@ -285,8 +285,23 @@
                     "type": "boolean",
                     "default": "true",
                     "description": "When enabled, if a .p4config file is found in the workspace, but P4CONFIG is not set in the environment, a warning will be shown. This is due to a change in behaviour of handling these files in v4 which may break backward compatibility"
+                },
+                "perforce.changelistSearch.maxResults": {
+                    "type": "number",
+                    "default": 200,
+                    "description": "The maximum number of results to return in the changelist search",
+                    "minimum": 1
                 }
             }
+        },
+        "views": {
+            "scm": [
+                {
+                    "id": "perforce.searchChangelists",
+                    "name": "Search Changelists",
+                    "when": "perforce.activation.hasScmProvider"
+                }
+            ]
         },
         "commands": [
             {
@@ -537,6 +552,78 @@
                 "title": "Open changelist in review tool",
                 "category": "Perforce",
                 "icon": "$(eye)"
+            },
+            {
+                "command": "perforce.changeSearch.resetFilters",
+                "title": "Reset all filters",
+                "category": "Perforce",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "perforce.changeSearch.resetFilter",
+                "title": "Reset filter",
+                "category": "Perforce",
+                "icon": "$(close)"
+            },
+            {
+                "command": "perforce.changeSearch.addFileFilter",
+                "title": "Add file filter",
+                "category": "Perforce",
+                "icon": "$(plus)"
+            },
+            {
+                "command": "perforce.changeSearch.editFileFilter",
+                "title": "Edit file filter",
+                "category": "Perforce",
+                "icon": "$(edit)"
+            },
+            {
+                "command": "perforce.changeSearch.removeFileFilter",
+                "title": "Remove file filter",
+                "category": "Perforce",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "perforce.changeSearch.refresh",
+                "title": "Refresh this search without changing filters",
+                "category": "Perforce",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "perforce.changeSearch.pin",
+                "title": "Pin results (keep until they are manually deleted)",
+                "category": "Perforce",
+                "icon": "$(pin)"
+            },
+            {
+                "command": "perforce.changeSearch.unpin",
+                "title": "Unpin results (discard on next search)",
+                "category": "Perforce",
+                "icon": "$(close)"
+            },
+            {
+                "command": "perforce.changeSearch.delete",
+                "title": "Discard results",
+                "category": "Perforce",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "perforce.changeSearch.showInQuickPick",
+                "title": "Show in quick pick",
+                "category": "Perforce",
+                "icon": "$(multiple-windows)"
+            },
+            {
+                "command": "perforce.changeSearch.enableAutoRefresh",
+                "title": "Enable auto search",
+                "category": "Perforce",
+                "icon": "$(sync-ignored)"
+            },
+            {
+                "command": "perforce.changeSearch.disableAutoRefresh",
+                "title": "Disable auto search",
+                "category": "Perforce",
+                "icon": "$(sync)"
             }
         ],
         "menus": {
@@ -635,6 +722,54 @@
                 },
                 {
                     "command": "perforce.openReviewTool",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.resetFilters",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.resetFilter",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.addFileFilter",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.editFileFilter",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.removeFileFilter",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.refresh",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.pin",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.unpin",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.delete",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.showInQuickPick",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.enableAutoRefresh",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.disableAutoRefresh",
                     "when": "0"
                 }
             ],
@@ -864,6 +999,68 @@
                     "command": "perforce.diffNext",
                     "group": "perforce@2",
                     "when": "perforce.currentFile.showDiffNext"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "perforce.changeSearch.resetFilters",
+                    "group": "inline@1",
+                    "when": "view == perforce.searchChangelists && viewItem == filterRoot"
+                },
+                {
+                    "command": "perforce.changeSearch.resetFilter",
+                    "group": "inline@1",
+                    "when": "view == perforce.searchChangelists && viewItem == filterItem-val"
+                },
+                {
+                    "command": "perforce.changeSearch.addFileFilter",
+                    "group": "inline@1",
+                    "when": "view == perforce.searchChangelists && viewItem == fileFilters"
+                },
+                {
+                    "command": "perforce.changeSearch.editFileFilter",
+                    "group": "inline@1",
+                    "when": "view == perforce.searchChangelists && viewItem == fileFilter"
+                },
+                {
+                    "command": "perforce.changeSearch.removeFileFilter",
+                    "group": "inline@2",
+                    "when": "view == perforce.searchChangelists && viewItem == fileFilter"
+                },
+                {
+                    "command": "perforce.changeSearch.enableAutoRefresh",
+                    "group": "inline@0",
+                    "when": "view == perforce.searchChangelists && viewItem == searchNow-manual"
+                },
+                {
+                    "command": "perforce.changeSearch.disableAutoRefresh",
+                    "group": "inline@0",
+                    "when": "view == perforce.searchChangelists && viewItem == searchNow-auto"
+                },
+                {
+                    "command": "perforce.changeSearch.refresh",
+                    "group": "inline@0",
+                    "when": "view == perforce.searchChangelists && viewItem =~ /results/"
+                },
+                {
+                    "command": "perforce.changeSearch.pin",
+                    "group": "inline@1",
+                    "when": "view == perforce.searchChangelists && viewItem == results-unpinned"
+                },
+                {
+                    "command": "perforce.changeSearch.unpin",
+                    "group": "inline@2",
+                    "when": "view == perforce.searchChangelists && viewItem == results-pinned"
+                },
+                {
+                    "command": "perforce.changeSearch.delete",
+                    "group": "inline@3",
+                    "when": "view == perforce.searchChangelists && viewItem =~ /results/"
+                },
+                {
+                    "command": "perforce.changeSearch.showInQuickPick",
+                    "group": "inline@0",
+                    "when": "view == perforce.searchChangelists && viewItem =~ /results/"
                 }
             ]
         },

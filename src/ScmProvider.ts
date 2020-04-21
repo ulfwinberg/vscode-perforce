@@ -10,13 +10,14 @@ import {
     workspace,
     TextDocument,
     env,
+    EventEmitter,
 } from "vscode";
 import { Model, ResourceGroup } from "./scm/Model";
 import { Resource } from "./scm/Resource";
 import { Status } from "./scm/Status";
 import { mapEvent } from "./Utils";
 import { FileType } from "./scm/FileTypes";
-import { WorkspaceConfigAccessor, ConfigAccessor } from "./ConfigService";
+import { configAccessor } from "./ConfigService";
 import * as DiffProvider from "./DiffProvider";
 import * as PerforceUri from "./PerforceUri";
 import { ClientRoot } from "./extension";
@@ -55,13 +56,26 @@ export class PerforceSCMProvider {
      */
     private _contributingDocs: Set<TextDocument>;
 
-    private static _config: ConfigAccessor = new ConfigAccessor();
+    private static _config = configAccessor;
 
     private static instances: PerforceSCMProvider[] = [];
     private _model: Model;
 
     get onDidChange(): Event<this> {
         return mapEvent(this._model.onDidChange, () => this);
+    }
+
+    public get clientRoot() {
+        return this._clientRoot;
+    }
+
+    public static get clientRoots() {
+        return this.instances.map((i) => i.clientRoot);
+    }
+
+    private static _onDidChangeScmProviders = new EventEmitter<void>();
+    public static get onDidChangeScmProviders() {
+        return this._onDidChangeScmProviders.event;
     }
 
     public get resources(): ResourceGroup[] {
@@ -74,7 +88,7 @@ export class PerforceSCMProvider {
         return "Perforce";
     }
     public get count(): number {
-        const countBadge = this._workspaceConfig.countBadge;
+        const countBadge = configAccessor.countBadge;
         const resources: Resource[] = this._model.ResourceGroups.flatMap(
             (g) => g.resourceStates as Resource[]
         );
@@ -105,10 +119,7 @@ export class PerforceSCMProvider {
         return "idle";
     }
 
-    constructor(
-        private _clientRoot: ClientRoot,
-        private _workspaceConfig: WorkspaceConfigAccessor
-    ) {
+    constructor(private _clientRoot: ClientRoot) {
         this._contributingDirs = new Set<string>();
         this._nonContributingDirs = new Set<string>();
         this._contributingDocs = new Set<TextDocument>();
@@ -122,13 +133,13 @@ export class PerforceSCMProvider {
         this._model = new Model(
             this._clientRoot.configSource,
             this._clientRoot.clientName,
-            this._workspaceConfig,
             sourceControl
         );
 
         this.disposables.push(this._model, sourceControl);
 
         PerforceSCMProvider.instances.push(this);
+        PerforceSCMProvider._onDidChangeScmProviders.fire();
         this._model._sourceControl.quickDiffProvider = this;
         this._model._sourceControl.acceptInputCommand = {
             command: "perforce.processChangelist",
@@ -238,7 +249,14 @@ export class PerforceSCMProvider {
         this.instances = this.instances.filter((instance) => instance.hasContributors());
 
         removed.forEach((r) => r.dispose());
+        if (removed.length > 0) {
+            this._onDidChangeScmProviders.fire();
+        }
         return removed;
+    }
+
+    public static get instanceCount() {
+        return this.instances.length;
     }
 
     public static registerCommands() {

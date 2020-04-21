@@ -30,3 +30,18 @@ export function parseDate(dateString: string) {
         );
     }
 }
+
+export function pluralise(num: number, word: string, limit?: number) {
+    const isLimit = num === limit;
+    return num + (isLimit ? "+ " : " ") + (num === 1 && !isLimit ? word : word + "s");
+}
+
+export function isPositiveOrZero(str: string) {
+    const num = parseInt(str);
+    return !isNaN(num) && num >= 0;
+}
+
+export function dedupe<T, K extends keyof T>(items: T[], key: K) {
+    const done = new Set<T[K]>();
+    return items.filter((i) => (done.has(i[key]) ? false : done.add(i[key])));
+}

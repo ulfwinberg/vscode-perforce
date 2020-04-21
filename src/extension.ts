@@ -11,12 +11,12 @@ import * as vscode from "vscode";
 import * as Path from "path";
 
 import { Disposable } from "vscode";
-import { WorkspaceConfigAccessor } from "./ConfigService";
 import { AnnotationProvider } from "./annotations/AnnotationProvider";
 import * as ContextVars from "./ContextVars";
 import * as QuickPicks from "./quickPick/QuickPicks";
 import * as p4 from "./api/PerforceApi";
 import { isTruthy } from "./TsUtils";
+import { registerChangelistSearch } from "./search/ChangelistTreeView";
 
 let _isRegistered = false;
 const _disposable: vscode.Disposable[] = [];
@@ -207,6 +207,7 @@ function getOverrideInfo(workspaceUri: vscode.Uri) {
 }
 
 function initClientRoot(workspaceUri: vscode.Uri, client: ClientRoot): boolean {
+    setActivationContext("hasScmProvider", true);
     const existing = PerforceSCMProvider.GetInstanceByClient(client);
     if (existing) {
         logInitProgress(
@@ -241,12 +242,11 @@ function initClientRoot(workspaceUri: vscode.Uri, client: ClientRoot): boolean {
 }
 
 function initScmProvider(client: ClientRoot): PerforceSCMProvider {
-    const workspaceConfig = new WorkspaceConfigAccessor(client.configSource); // TODO doesn't make sense any more
-    const scm = new PerforceSCMProvider(client, workspaceConfig);
+    const scm = new PerforceSCMProvider(client);
 
     scm.Initialize();
     _disposable.push(scm);
-    _disposable.push(new FileSystemActions(vscode.workspace, workspaceConfig));
+    _disposable.push(new FileSystemActions(vscode.workspace));
 
     doOneTimeRegistration();
     Display.activateStatusBar();
@@ -488,6 +488,7 @@ function doOneTimeRegistration() {
         // todo: fix dependency / order of operations issues
         PerforceCommands.registerCommands();
         PerforceSCMProvider.registerCommands();
+        registerChangelistSearch();
     }
 }
 
@@ -566,6 +567,16 @@ function onDidChangeConfiguration(event: vscode.ConfigurationChangeEvent) {
     }
 }
 
+function disposeInstancesWithoutContributors() {
+    const removedScms = PerforceSCMProvider.disposeInstancesWithoutContributors();
+
+    if (PerforceSCMProvider.instanceCount < 1) {
+        setActivationContext("hasScmProvider", false);
+    }
+
+    return removedScms;
+}
+
 async function onDidChangeWorkspaceFolders(
     event: vscode.WorkspaceFoldersChangeEvent
 ): Promise<void> {
@@ -598,7 +609,8 @@ async function onDidChangeWorkspaceFolders(
             for (const workspace of removed) {
                 removeWorkspace(workspace);
             }
-            const removedScms = PerforceSCMProvider.disposeInstancesWithoutContributors();
+
+            const removedScms = disposeInstancesWithoutContributors();
 
             Display.channel.appendLine(
                 "\t>>> Removed " +

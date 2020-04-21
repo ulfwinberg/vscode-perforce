@@ -596,9 +596,22 @@ describe("Perforce API", () => {
         it("Returns the list of open changelists", async () => {
             execute.callsFake(
                 execWithStdOut(
-                    "Change 2148153 on 2020/01/21 by user3@client 'Update things'\n" +
-                        "Change 2148152 on 2020/01/20 by user2@client *pending* 'Do some updates '\n" +
-                        "Change 2148150 on 2020/01/12 by user1@client *pending* 'Update more things'"
+                    [
+                        "Change 2148153 on 2020/01/21 by user3@client",
+                        "",
+                        "\tUpdate things",
+                        "",
+                        "Change 2148152 on 2020/01/20 by user2@client *pending*",
+                        "",
+                        "\tDo some updates",
+                        "\t",
+                        "\tOver multiple lines",
+                        "",
+                        "Change 2148150 on 2020/01/12 by user1@client *pending*",
+                        "",
+                        "\tUpdate more things",
+                        "",
+                    ].join("\n")
                 )
             );
 
@@ -610,31 +623,32 @@ describe("Perforce API", () => {
             ).to.eventually.deep.equal([
                 {
                     chnum: "2148153",
-                    date: "2020/01/21",
+                    date: parseDate("2020/01/21"),
                     user: "user3",
                     client: "client",
-                    status: undefined,
-                    description: "Update things",
+                    isPending: false,
+                    description: ["Update things"],
                 },
                 {
                     chnum: "2148152",
-                    date: "2020/01/20",
+                    date: parseDate("2020/01/20"),
                     user: "user2",
                     client: "client",
-                    status: "pending",
-                    description: "Do some updates ",
+                    isPending: true,
+                    description: ["Do some updates", "", "Over multiple lines"],
                 },
                 {
                     chnum: "2148150",
-                    date: "2020/01/12",
+                    date: parseDate("2020/01/12"),
                     user: "user1",
                     client: "client",
-                    status: "pending",
-                    description: "Update more things",
+                    isPending: true,
+                    description: ["Update more things"],
                 },
             ] as ChangeInfo[]);
 
             expect(execute).to.have.been.calledWith(ws, "changes", sinon.match.any, [
+                "-l",
                 "-c",
                 "client",
                 "-s",

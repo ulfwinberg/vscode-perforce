@@ -6,11 +6,11 @@ export type FixedJob = { id: string; description: string[] };
 
 export type ChangeInfo = {
     chnum: string;
-    description: string;
-    date: string;
+    description: string[];
+    date?: Date;
     user: string;
     client: string;
-    status?: string;
+    isPending?: boolean;
 };
 
 export type ChangeSpec = {
