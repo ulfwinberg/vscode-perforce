@@ -9,6 +9,7 @@ import {
 
 import { debounce } from "./Debounce";
 import * as p4 from "./api/PerforceApi";
+import * as PerforceUri from "./PerforceUri";
 
 let _statusBarItem: StatusBarItem;
 
@@ -28,6 +29,8 @@ export interface ActiveStatusEvent {
 export namespace Display {
     export const channel = window.createOutputChannel("Perforce Log");
 
+    let _lastStatusEvent: ActiveStatusEvent | undefined;
+
     const _onActiveFileStatusKnown = new EventEmitter<ActiveStatusEvent>();
     export const onActiveFileStatusKnown = _onActiveFileStatusKnown.event;
     const _onActiveFileStatusCleared = new EventEmitter<Uri | undefined>();
@@ -39,6 +42,7 @@ export namespace Display {
         if (!_statusBarActivated) {
             return;
         }
+        _lastStatusEvent = undefined;
         _onActiveFileStatusCleared.fire(window.activeTextEditor?.document.uri);
         if (_statusBarItem) {
             _statusBarItem.show();
@@ -64,6 +68,10 @@ export namespace Display {
         subscriptions.push(window.onDidChangeActiveTextEditor(updateEditor));
 
         updateEditor();
+    }
+
+    export function getLastActiveFileStatus() {
+        return _lastStatusEvent;
     }
 
     export function activateStatusBar() {
@@ -126,10 +134,46 @@ export namespace Display {
                 active = ActiveEditorStatus.NOT_IN_WORKSPACE;
             }
 
-            _onActiveFileStatusKnown.fire({ file: doc.uri, status: active, details });
+            _lastStatusEvent = { file: doc.uri, status: active, details };
+            _onActiveFileStatusKnown.fire(_lastStatusEvent);
         } else {
             _statusBarItem.hide();
         }
+    }
+
+    async function isSameAsOpenHaveFile(uri: Uri) {
+        const open = window.activeTextEditor?.document.uri;
+        if (!open || !PerforceUri.isDepotUri(uri)) {
+            return false;
+        }
+        const have = await p4.have(open, { file: open });
+        if (have) {
+            return have.depotPath === PerforceUri.getDepotPathFromDepotUri(uri);
+        }
+        return false;
+    }
+
+    function isSameAsOpenFileByStatus(uri: Uri) {
+        const open = window.activeTextEditor?.document.uri;
+        if (!open || !PerforceUri.isDepotUri(uri)) {
+            return false;
+        }
+
+        const path = Display.getLastActiveFileStatus()?.details?.depotPath;
+        return path && path === PerforceUri.getDepotPathFromDepotUri(uri);
+    }
+
+    export async function isSameAsOpenFile(uri: Uri) {
+        const open = window.activeTextEditor?.document.uri;
+        if (!open) {
+            return false;
+        }
+
+        return (
+            PerforceUri.isSameFileOrDepotPath(uri, open) ||
+            isSameAsOpenFileByStatus(uri) ||
+            (await isSameAsOpenHaveFile(uri))
+        );
     }
 
     export function showMessage(message: string) {
