@@ -188,6 +188,11 @@
                     "default": "none",
                     "description": "Configure a path to p4 or an alternate command if needed"
                 },
+                "perforce.resolve.p4editor": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Overrides P4EDITOR when running resolve commands, allowing you to use a different editor to edit the merge file. Use an empty value to not override.\n\nUse `code --wait` to resolve files in vscode. When editing a merge file in vscode, save the file and close it to continue the resolve.\n\nIMPORTANT: `code --wait` DOES NOT APPEAR TO WORK AS A P4EDITOR ON WINDOWS"
+                },
                 "perforce.countBadge": {
                     "type": "string",
                     "description": "Controls the badge counter for Perforce",
@@ -530,6 +535,16 @@
                 "icon": "$(edit)"
             },
             {
+                "command": "perforce.resolveChangelist",
+                "title": "Resolve changelist...",
+                "category": "Perforce"
+            },
+            {
+                "command": "perforce.reresolveChangelist",
+                "title": "Re-resolve changelist...",
+                "category": "Perforce"
+            },
+            {
                 "command": "perforce.reopenFile",
                 "title": "Move to changelist...",
                 "category": "Perforce",
@@ -674,6 +689,14 @@
                 },
                 {
                     "command": "perforce.describe",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.resolveChangelist",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.reresolveChangelist",
                     "when": "0"
                 },
                 {
@@ -862,6 +885,16 @@
                     "group": "1_modification@4"
                 },
                 {
+                    "command": "perforce.resolveChangelist",
+                    "when": "scmProvider == perforce && scmResourceGroup =~ /unres/",
+                    "group": "1_resolve@1"
+                },
+                {
+                    "command": "perforce.reresolveChangelist",
+                    "when": "scmProvider == perforce && scmResourceGroup =~ /reres/",
+                    "group": "1_resolve@2"
+                },
+                {
                     "command": "perforce.shelveChangelist",
                     "when": "scmProvider == perforce && scmResourceGroup != default",
                     "group": "2_shelving@1"
@@ -889,7 +922,7 @@
                 {
                     "command": "perforce.unfixJob",
                     "when": "scmProvider == perforce && scmResourceGroup != default",
-                    "group": "3_job@1"
+                    "group": "3_job@2"
                 },
                 {
                     "command": "perforce.describe",

@@ -544,6 +544,20 @@ export class Model implements Disposable {
         Display.channel.append(output);
     }
 
+    public async ResolveChangelist(input: ResourceGroup) {
+        this.assertIsNotDefault(input);
+
+        await p4.resolve(this._workspaceUri, { chnum: input.chnum });
+        this.Refresh();
+    }
+
+    public async ReResolveChangelist(input: ResourceGroup) {
+        this.assertIsNotDefault(input);
+
+        await p4.resolve(this._workspaceUri, { chnum: input.chnum, reresolve: true });
+        this.Refresh();
+    }
+
     public async ShelveChangelist(input: ResourceGroup, revert?: boolean): Promise<void> {
         if (input.isDefault) {
             throw new Error("Cannot shelve the default changelist");
@@ -574,7 +588,8 @@ export class Model implements Disposable {
             });
             this.Refresh();
             if (unshelved.warnings.length > 0) {
-                Display.showImportantError(
+                const resolveButton = "Resolve changelist";
+                const chosen = await vscode.window.showWarningMessage(
                     "Changelist " +
                         input.chnum +
                         " was unshelved, but " +
@@ -584,8 +599,13 @@ export class Model implements Disposable {
                             0,
                             "files need"
                         ) +
-                        " resolving"
+                        " resolving",
+                    resolveButton
                 );
+                if (chosen === resolveButton) {
+                    await p4.resolve(this._workspaceUri, { chnum: input.chnum });
+                    this.Refresh();
+                }
             }
             Display.showMessage("Changelist unshelved");
         } catch (err) {
@@ -628,9 +648,18 @@ export class Model implements Disposable {
                     paths: [input.depotPath],
                 });
                 if (unshelveOutput.warnings.length > 0) {
-                    Display.showImportantError(
-                        "The file was unshelved, but needs resolving"
+                    this.Refresh();
+                    const resolveButton = "Resolve file";
+                    const chosen = await vscode.window.showWarningMessage(
+                        Path.basename(input.resourceUri.fsPath) +
+                            " was unshelved, but needs resolving",
+                        resolveButton
                     );
+                    if (chosen === resolveButton) {
+                        await p4.resolve(this._workspaceUri, {
+                            files: [input.resourceUri],
+                        });
+                    }
                 } else {
                     const output = await p4.shelve(this._workspaceUri, {
                         chnum: input.change,
@@ -929,6 +958,15 @@ export class Model implements Disposable {
         return resource;
     }
 
+    private static makeGroupId(resources: Resource[], change: ChangeInfo) {
+        const items = [
+            "pending",
+            resources.some((r) => r.isUnresolved) ? "unres" : undefined,
+            resources.some((r) => r.isReresolvable) ? "reres" : undefined,
+        ].filter(isTruthy);
+        return items.join("_") + ":" + change.chnum;
+    }
+
     private createResourceGroups(changelists: ChangeInfo[], resources: Resource[]) {
         if (!this._sourceControl) {
             throw new Error("Source control not initialised");
@@ -970,8 +1008,9 @@ export class Model implements Disposable {
                         return;
                     }
                 }
+                const groupId = Model.makeGroupId(resourceStates, c);
                 const group = sc.createResourceGroup(
-                    "pending:" + c.chnum,
+                    groupId,
                     "#" + c.chnum + ": " + c.description.join(" ")
                 ) as ResourceGroup;
                 group.model = this;

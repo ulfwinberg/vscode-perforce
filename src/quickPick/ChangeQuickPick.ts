@@ -11,7 +11,7 @@ import { toReadableDateTime } from "../DateFormatter";
 import { configAccessor } from "../ConfigService";
 import { focusChangelist } from "../search/ChangelistTreeView";
 import { PerforceSCMProvider } from "../ScmProvider";
-import { pluralise } from "../TsUtils";
+import { pluralise, isTruthy } from "../TsUtils";
 
 const nbsp = "\xa0";
 
@@ -71,11 +71,21 @@ async function unshelveAndRefresh(resource: vscode.Uri, options: p4.UnshelveOpti
         const output = await p4.unshelve(resource, options);
         Display.showMessage("Changelist unshelved");
         if (output.warnings.length > 0) {
-            Display.showImportantError(
-                "The changelist was unshelved, but " +
+            const resolveButton: string | undefined = options.toChnum
+                ? "Resolve changelist"
+                : undefined;
+            const chosen = await vscode.window.showWarningMessage(
+                "Changelist #" +
+                    options.shelvedChnum +
+                    " was unshelved, but " +
                     pluralise(output.warnings.length, "file needs", 0, "files need") +
-                    " resolving"
+                    " resolving",
+                ...[resolveButton].filter(isTruthy)
             );
+            if (chosen && chosen === resolveButton) {
+                await p4.resolve(resource, { chnum: options.toChnum });
+                PerforceSCMProvider.RefreshAll();
+            }
         }
     } catch (err) {
         Display.showImportantError(err);
