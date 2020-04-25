@@ -1,5 +1,18 @@
 # Change log
 
+## [4.3.0] - 2020-04-25
+
+* Add "unshelve into" and "unshelve via branch" to the changelist quick pick, e.g. when searching for changelists (#103)
+* Icons on the SCM provider now show a red outline if the file needs resolving (#114)
+  * Note - [icons do not show in Remote-SSH](https://github.com/microsoft/vscode-remote-release/issues/2829)
+* Add "Resolve changelist" and "Re-resolve changelist" to the SCM provider context menu (#114)
+  * This is a fairly rudimentary resolve that just opens up the standard `p4 resolve` command line in a terminal view
+  * A new setting is added to change the P4EDITOR when resolving - by default it leaves the P4EDITOR alone. It can be set to `code --wait` to use vscode to edit the merge file, but this value does not seem to work on windows, and is unlikely to be useful with remote-SSH
+* Show a warning when an unshelved file needs resolving
+* Add a warning when both slevesque.perforce and mjcrouch.perforce are enabled
+* When annotating, and hovering over a line, "annotate" is now "annotate previous" (#107)
+* Fix an issue where, when the same perforce client was found via two different hostnames, an invisible duplicate SCM provider would be created
+
 ## [4.2.0] - 2020-04-21
 
 * Add a changelist search to the SCM provider panel. This allows you to find changelists using a similar set of filters to p4 / P4V - [Feedback welcome](https://github.com/mjcrouch/vscode-perforce/issues/104) (#68)
@@ -300,6 +313,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.3.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.2.0...4.3.0
 [4.2.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.1.0...4.2.0
 [4.1.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.0.0...4.1.0
 [4.0.0]: https://github.com/mjcrouch/vscode-perforce/compare/3.10.0...4.0.0
