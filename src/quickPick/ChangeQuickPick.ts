@@ -70,6 +70,7 @@ async function unshelveAndRefresh(resource: vscode.Uri, options: p4.UnshelveOpti
     try {
         const output = await p4.unshelve(resource, options);
         Display.showMessage("Changelist unshelved");
+        PerforceSCMProvider.RefreshAll();
         if (output.warnings.length > 0) {
             const resolveButton: string | undefined = options.toChnum
                 ? "Resolve changelist"
@@ -84,13 +85,12 @@ async function unshelveAndRefresh(resource: vscode.Uri, options: p4.UnshelveOpti
             );
             if (chosen && chosen === resolveButton) {
                 await p4.resolve(resource, { chnum: options.toChnum });
-                PerforceSCMProvider.RefreshAll();
             }
         }
     } catch (err) {
         Display.showImportantError(err);
+        PerforceSCMProvider.RefreshAll();
     }
-    PerforceSCMProvider.RefreshAll();
 }
 
 export const unshelveChangeQuickPickProvider: qp.ActionableQuickPickProvider = {
