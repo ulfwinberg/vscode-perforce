@@ -78,7 +78,7 @@ export class DecorationProvider {
     ) {
         const items = [
             isShelved ? "Shelved" : undefined,
-            status ? getStatusText(status) : undefined,
+            status !== undefined ? getStatusText(status) : undefined,
             isUnresolved ? "NEEDS RESOLVE" : undefined,
         ];
         return items.filter(isTruthy).join(" - ");
