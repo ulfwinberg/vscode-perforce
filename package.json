@@ -2,7 +2,7 @@
     "name": "perforce",
     "displayName": "Perforce for VS Code",
     "description": "(2020 Fork) Perforce integration with VS Code's SCM features",
-    "version": "4.3.0",
+    "version": "4.4.0",
     "publisher": "mjcrouch",
     "license": "MIT",
     "categories": [
@@ -260,7 +260,11 @@
                     "type": "string",
                     "description": "Controls the behaviour when shelving / unshelving an individual file\n\n`swap` - When shelving, always try to revert the open file. When unshelving, always try to delete the shelved file\n`keep both` - When shelving, never try to revert the open file. When unshelving, never try to delete the shelved file\n`prompt` - When shelving, prompt for whether to revert the open file. When unshelving, prompt for whether to delete the shelved file",
                     "default": "prompt",
-                    "enum": ["swap", "keep both", "prompt"]
+                    "enum": [
+                        "swap",
+                        "keep both",
+                        "prompt"
+                    ]
                 },
                 "perforce.swarmHost": {
                     "type": "string",
