@@ -1,5 +1,12 @@
 # Change log
 
+## [4.4.1] - 2020-04-28
+
+* Fix problems relating to diffs:
+  * When using remote SSH and diffing the working file against a depot revision, the "diff previous" command now works correctly instead of doing the same diff again (#118)
+  * When using the cpp extension locally, it could previously complain about missing files when performing a diff (#119) 
+* Fix issue where, after focusing a changelist in the changelist search, clicking the individual files did not work
+
 ## [4.4.0] - 2020-04-27
 
 * Add `fileShelveMode` setting to control behaviour when shelving or unshelving an individual file. Choose whether to revert the open file when it is shelved, and delete the shelved file when it is unshelved. (#91)
@@ -320,6 +327,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.4.1]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.0...4.4.1
 [4.4.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.3.0...4.4.0
 [4.3.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.2.0...4.3.0
 [4.2.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.1.0...4.2.0
