@@ -1,5 +1,10 @@
 # Change log
 
+## [4.4.2] - 2020-04-29
+
+* Fix the issue with diffs and the cpp extension again, for cases where the diff is started from the SCM provider (#119)
+* Fix issue annotating a file, where the file has a revision integrated from multiple source revisions (#120)
+
 ## [4.4.1] - 2020-04-28
 
 * Fix problems relating to diffs:
