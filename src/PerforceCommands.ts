@@ -22,6 +22,8 @@ import * as AnnotationProvider from "./annotations/AnnotationProvider";
 import * as DiffProvider from "./DiffProvider";
 import * as QuickPicks from "./quickPick/QuickPicks";
 import { showQuickPick } from "./quickPick/QuickPickProvider";
+import { splitBy } from "./TsUtils";
+import { perforceContentProvider } from "./ContentProvider";
 
 // TODO resolve
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -32,6 +34,10 @@ export namespace PerforceCommands {
         commands.registerCommand("perforce.delete", deleteOpenFile);
         commands.registerCommand("perforce.revert", revertOpenFile);
         commands.registerCommand("perforce.submitSingle", submitSingle);
+        commands.registerCommand("perforce.syncOpenFile", syncOpenFile);
+        commands.registerCommand("perforce.syncOpenFileRevision", syncOpenFileRevision);
+        commands.registerCommand("perforce.explorer.syncPath", syncExplorerPath);
+        commands.registerCommand("perforce.explorer.syncDir", syncExplorerDir);
         commands.registerCommand("perforce.diff", diff);
         commands.registerCommand("perforce.diffRevision", diffRevision);
         commands.registerCommand("perforce.diffPrevious", diffPrevious);
@@ -227,8 +233,118 @@ export namespace PerforceCommands {
         }
 
         const output = await p4.submitChangelist(file, { description, file });
+        didChangeHaveRev(file);
         PerforceSCMProvider.RefreshAll();
         Display.showMessage("Changelist " + output.chnum + " submitted");
+    }
+
+    async function pickRevision(uri: Uri, placeHolder: string) {
+        const revisions = await p4.getFileHistory(uri, {
+            file: uri,
+            followBranches: false,
+            omitNonContributoryIntegrations: true,
+        });
+
+        const items = revisions
+            .filter((rev, _i, arr) => rev.file === arr[0].file) // ignore pre-renamed files
+            .map((rev) => {
+                return {
+                    label: `#${rev.revision} change: ${rev.chnum}`,
+                    description: rev.description,
+                    item: rev,
+                };
+            });
+
+        const chosen = await window.showQuickPick(items, { placeHolder });
+
+        return chosen?.item;
+    }
+
+    function didChangeHaveRev(uri: Uri) {
+        perforceContentProvider().requestUpdatedDocument(
+            PerforceUri.fromUriWithRevision(uri, "have")
+        );
+    }
+
+    export async function syncOpenFile() {
+        const file = window.activeTextEditor?.document.uri;
+        if (!file || file.scheme !== "file") {
+            Display.showError("No open file to sync");
+            return;
+        }
+
+        try {
+            await p4.sync(file, { files: [file] });
+            Display.showMessage("File Synced");
+            didChangeHaveRev(file);
+        } catch {}
+        PerforceSCMProvider.RefreshAll();
+    }
+
+    export async function syncOpenFileRevision() {
+        const file = window.activeTextEditor?.document.uri;
+        if (!file || file.scheme !== "file") {
+            Display.showError("No open file to sync");
+            return;
+        }
+
+        const revision = await pickRevision(file, "Choose a revision to sync");
+
+        if (revision) {
+            const chosen = PerforceUri.fromDepotPath(
+                file,
+                revision.file,
+                revision.revision
+            );
+            try {
+                await p4.sync(file, { files: [chosen] });
+                Display.showMessage("File Synced");
+                didChangeHaveRev(file);
+            } catch {}
+            PerforceSCMProvider.RefreshAll();
+        }
+    }
+
+    function withExplorerProgress(func: () => Promise<any>) {
+        return window.withProgress(
+            { location: { viewId: "workbench.view.explorer" } },
+            func
+        );
+    }
+
+    export async function syncExplorerDir(dir: Uri | string, dirs: Uri[]) {
+        const resource = typeof dir === "string" ? Uri.parse(dir) : dir;
+        const allDirs = [resource, ...dirs.filter((d) => d.fsPath !== resource.fsPath)];
+        const promises = allDirs.map((d) => {
+            const path = Path.join(d.fsPath, "...");
+            return p4.sync(d, { files: [path] });
+        });
+        try {
+            await withExplorerProgress(() => Promise.all(promises));
+            Display.showMessage("Directory Synced");
+        } catch {}
+        PerforceSCMProvider.RefreshAll();
+    }
+
+    // accepts a string for any custom tasks etc
+    export async function syncExplorerPath(file: Uri | string, files: Uri[]) {
+        const resource = typeof file === "string" ? Uri.parse(file) : file;
+        const allFiles = [resource, ...files.filter((f) => f.fsPath !== resource.fsPath)];
+        const filesByDir = splitBy(allFiles, (f) => Path.dirname(f.fsPath));
+        const promises = filesByDir.map(async (dirFiles) => {
+            try {
+                await p4.sync(dirFiles[0], { files: dirFiles });
+            } catch (err) {
+                throw err;
+            } finally {
+                dirFiles.map((file) => didChangeHaveRev(file));
+            }
+        });
+        try {
+            await withExplorerProgress(() => Promise.all(promises));
+            Display.showMessage("File Synced");
+        } catch {}
+        PerforceSCMProvider.RefreshAll();
     }
 
     export async function diff(revision?: number) {
@@ -261,7 +377,7 @@ export namespace PerforceCommands {
         }
     }
 
-    export function diffRevision() {
+    export async function diffRevision() {
         const editor = window.activeTextEditor;
         if (!checkFileSelected()) {
             return false;
@@ -277,44 +393,10 @@ export namespace PerforceCommands {
 
         const doc = editor.document;
 
-        const args = ["-s", Utils.expansePath(doc.uri.fsPath)];
-        PerforceService.execute(
-            doc.uri,
-            "filelog",
-            (err, stdout, stderr) => {
-                if (err) {
-                    Display.showError(err.message);
-                } else if (stderr) {
-                    Display.showError(stderr.toString());
-                } else {
-                    const revisions = stdout.split("\n");
-                    const revisionsData: QuickPickItem[] = [];
-                    revisions.shift(); // remove the first line - filename
-                    revisions.forEach((revisionInfo) => {
-                        if (!revisionInfo.includes("... #")) {
-                            return;
-                        }
-
-                        const splits = revisionInfo.split(" ");
-                        const rev = splits[1].substring(1); // splice 1st character '#'
-                        const change = splits[3];
-                        const label = `#${rev} change: ${change}`;
-                        const description = revisionInfo.substring(
-                            revisionInfo.indexOf(splits[9]) + splits[9].length + 1
-                        );
-
-                        revisionsData.push({ label, description });
-                    });
-
-                    window.showQuickPick(revisionsData).then((revision) => {
-                        if (revision) {
-                            diff(parseInt(revision.label.substring(1)));
-                        }
-                    });
-                }
-            },
-            args
-        );
+        const revision = await pickRevision(doc.uri, "Choose a revision to diff against");
+        if (revision) {
+            diff(parseInt(revision.revision));
+        }
     }
 
     async function diffPrevious(fromDoc?: Uri) {
@@ -535,6 +617,14 @@ export namespace PerforceCommands {
             description: "Submit the open file, ONLY if it is in the default changelist",
         });
         items.push({
+            label: "sync file",
+            description: "Sync the file to the latest revision",
+        });
+        items.push({
+            label: "sync revision",
+            description: "Choose a revision to sync",
+        });
+        items.push({
             label: "diff",
             description: "Display diff of client file with depot file",
         });
@@ -575,6 +665,12 @@ export namespace PerforceCommands {
                         break;
                     case "submit single file":
                         submitSingle();
+                        break;
+                    case "sync file":
+                        syncOpenFile();
+                        break;
+                    case "sync revision":
+                        syncOpenFileRevision();
                         break;
                     case "diff":
                         diff();
