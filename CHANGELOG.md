@@ -1,5 +1,18 @@
 # Change log
 
+## [4.5.0] - 2020-05-03
+
+* Add new commands to the explorer context menu. If you don't like them, each section can be disabled using the settings that start with `perforce.explorer.`...
+  * Sync (#128)
+  * Add / Edit / Revert
+  * Move / rename (#13)
+  * Delete
+* Add 'sync' and 'sync revision' to the status bar menu
+* Add 'sync this revision' to the quick pick when looking at file history
+* Add confirmation dialog when reverting a file from the status bar menu
+* Add 'file history' to the status bar menu
+
+
 ## [4.4.2] - 2020-04-29
 
 * Fix the issue with diffs and the cpp extension again, for cases where the diff is started from the SCM provider (#119)
@@ -332,6 +345,8 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.5.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.2...4.5.0
+[4.4.2]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.1...4.4.2
 [4.4.1]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.0...4.4.1
 [4.4.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.3.0...4.4.0
 [4.3.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.2.0...4.3.0

@@ -133,6 +133,7 @@ This fork fixes many issues from the original extension and adds a variety of ot
 * Improved support for shelved files & changelists
 * Basic support for resolving and re-resolving changelists
 * Supports multiple P4CONFIG files in the same workspace
+* Adds basic commands such as add / edit / revert / move to the explorer context menu (can be disabled with `perforce.explorer.`... settings)
 * Works more reliably with personal servers
 * Ability to move selected file from the default changelist to a new changelist
 
