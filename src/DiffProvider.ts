@@ -14,7 +14,26 @@ export enum DiffType {
     WORKSPACE_V_SHELVE,
 }
 
+function numberOfLeadingSlashes(str: string, after = 0) {
+    return str
+        .slice(after)
+        .split("")
+        .findIndex((a) => a !== "/" && a !== "\\");
+}
+
 function findLengthOfCommonPrefix(sa: string, sb: string) {
+    const aDir = Path.dirname(sa);
+    const bDir = Path.dirname(sb);
+    if (aDir === bDir) {
+        const remainingCommonSlashes = Math.max(
+            0,
+            Math.min(
+                numberOfLeadingSlashes(sa, aDir.length),
+                numberOfLeadingSlashes(sb, bDir.length)
+            )
+        );
+        return aDir.length + remainingCommonSlashes;
+    }
     const i = sa.split("").findIndex((a, i) => a !== sb[i]);
     return i;
 }
@@ -28,6 +47,16 @@ export function getPathsWithoutCommonPrefix(a: string, b: string): [string, stri
     return [getUnprefixedName(a, prefixLen), getUnprefixedName(b, prefixLen)];
 }
 
+function pathWithRev(path: string, revOrAtLabel: string, couldBeWorkspace?: boolean) {
+    if (!revOrAtLabel) {
+        return couldBeWorkspace ? path + " (workspace)" : path;
+    }
+    if (isNaN(parseInt(revOrAtLabel))) {
+        return path + revOrAtLabel;
+    }
+    return path + "#" + revOrAtLabel;
+}
+
 export function diffTitleForDepotPaths(
     leftPath: string,
     leftRevision: string,
@@ -36,12 +65,9 @@ export function diffTitleForDepotPaths(
 ) {
     const [leftTitle, rightTitle] = getPathsWithoutCommonPrefix(leftPath, rightPath);
     return (
-        leftTitle +
-        "#" +
-        leftRevision +
+        pathWithRev(leftTitle, leftRevision) +
         " ⟷ " +
-        rightTitle +
-        (rightRevision ? "#" + rightRevision : "")
+        pathWithRev(rightTitle, rightRevision)
     );
 }
 
@@ -49,12 +75,12 @@ function diffTitleForFiles(leftFile: Uri, rightFile: Uri) {
     if (!PerforceUri.isDepotUri(rightFile)) {
         const rightRev = PerforceUri.getRevOrAtLabel(rightFile);
         return (
-            Path.basename(leftFile.fsPath) +
-            "#" +
-            PerforceUri.getRevOrAtLabel(leftFile) +
+            pathWithRev(
+                Path.basename(leftFile.fsPath),
+                PerforceUri.getRevOrAtLabel(leftFile)
+            ) +
             " ⟷ " +
-            Path.basename(rightFile.fsPath) +
-            (rightRev ? "#" + rightRev : " (workspace)")
+            pathWithRev(Path.basename(rightFile.fsPath), rightRev, true)
         );
     }
     const leftPath = PerforceUri.getDepotPathFromDepotUri(leftFile);
