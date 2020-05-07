@@ -8,6 +8,9 @@ import * as PerforceUri from "../PerforceUri";
 import * as Path from "path";
 import { ProviderSelection } from "./ProviderSelection";
 import { configAccessor } from "../ConfigService";
+import { showComboBoxInput } from "../ComboBoxInput";
+import * as p4 from "../api/PerforceApi";
+import { Display } from "../Display";
 
 type SearchFilterValue<T> = {
     label: string;
@@ -155,15 +158,19 @@ class StatusFilter extends FilterItem<ChangelistStatus> {
 
 async function showFilterTextInput(
     placeHolder: string,
-    currentValue?: string
+    currentValue: string,
+    getSearchResults: (value: string) => Promise<string[]>
 ): Promise<SearchFilterValue<string> | undefined> {
     const value = await vscode.window.showInputBox({
-        prompt: placeHolder,
+        prompt: placeHolder + " (use * for wildcards)",
         value: currentValue,
         placeHolder: placeHolder,
     });
     if (value === undefined) {
         return undefined;
+    }
+    if (value.includes("*")) {
+        return showSearchResults(value, placeHolder, getSearchResults);
     }
     return {
         label: value,
@@ -171,32 +178,51 @@ async function showFilterTextInput(
     };
 }
 
-async function pickFromProviderOrCustom<T>(
+async function showSearchResults(
+    filter: string,
+    placeHolder: string,
+    getSearchResults: (value: string) => Promise<string[]>
+): Promise<SearchFilterValue<string> | undefined> {
+    const results = await getSearchResults(filter);
+    if (results.length < 1) {
+        Display.showImportantError("No results found for filter " + filter);
+        return;
+    }
+    const items = results.map((item) => {
+        return {
+            label: item,
+            value: {
+                label: item,
+                value: item,
+            },
+            alwaysShow: true,
+        };
+    });
+    const newChosen = await vscode.window.showQuickPick(items, { placeHolder });
+    return newChosen?.value;
+}
+
+async function pickFromProviderOrCustom(
     placeHolder: string,
     currentValue: string | undefined,
     client: ClientRoot | undefined,
-    clientValue: T | undefined,
+    clientValue: string | undefined,
     readableKey: string,
-    readableValue: string | undefined
+    getSearchResults: (value: string) => Promise<string[]>
 ) {
-    const current: PickWithValue<SearchFilterValue<T>> | undefined =
+    const current: PickWithValue<SearchFilterValue<string>> | undefined =
         client && clientValue !== undefined
             ? {
                   label: "$(person) Current " + readableKey,
-                  description: readableValue,
+                  description: clientValue,
                   value: {
-                      label: readableValue ?? "",
+                      label: clientValue ?? "",
                       value: clientValue,
                   },
               }
             : undefined;
-    const custom: PickWithValue<SearchFilterValue<T>> = {
-        label: "$(edit) Enter a " + readableKey + "...",
-        description: "Filter by a different " + readableKey,
-    };
-    const items: PickWithValue<SearchFilterValue<T>>[] = [
+    const items: PickWithValue<SearchFilterValue<string>>[] = [
         current,
-        custom,
         {
             label: "$(chrome-close) Reset",
             description: "Don't filter by " + readableKey,
@@ -206,11 +232,46 @@ async function pickFromProviderOrCustom<T>(
             },
         },
     ].filter(isTruthy);
-    const chosen = await vscode.window.showQuickPick(items, {
-        placeHolder: placeHolder,
-    });
-    if (chosen === custom) {
-        return showFilterTextInput("Enter a " + readableKey, currentValue);
+    const customDescription = "Type a " + readableKey + " filter";
+    const chosen = await showComboBoxInput(
+        items,
+        { placeHolder, matchOnDescription: true, insertBeforeIndex: 1 },
+        (value) => {
+            const isSearch = value.includes("*");
+            return [
+                {
+                    label: value
+                        ? (isSearch ? "$(search) Search for " : "$(edit) Entered ") +
+                          readableKey +
+                          ": " +
+                          value
+                        : "$(edit) Enter a " + readableKey,
+                    description: value ? "" : customDescription,
+                    detail: value
+                        ? "\xa0".repeat(4) + "Use * as a wildcard to perform a search"
+                        : "",
+                    alwaysShow: true,
+                    value: {
+                        label: value,
+                        value: value,
+                    },
+                },
+            ];
+        }
+    );
+
+    if (chosen?.description === customDescription && !chosen.value?.value) {
+        return showFilterTextInput(
+            "Enter a " + readableKey,
+            currentValue ?? "",
+            getSearchResults
+        );
+    } else if (chosen?.label.startsWith("$(search)")) {
+        return showSearchResults(
+            chosen.value?.value ?? "*",
+            placeHolder,
+            getSearchResults
+        );
     }
     return chosen?.value;
 }
@@ -225,13 +286,23 @@ class UserFilter extends FilterItem<string> {
     }
 
     public async chooseValue(): Promise<SearchFilterValue<string> | undefined> {
+        const client = this._provider.client;
+        if (!client) {
+            throw new Error("No client selected");
+        }
         return pickFromProviderOrCustom(
             this._filter.placeHolder,
             this.value,
-            this._provider.client,
-            this._provider.client?.userName,
+            client,
+            client.userName,
             "user",
-            this._provider.client?.userName
+            async (value) => {
+                const users = await p4.users(client.configSource, {
+                    max: 200,
+                    userFilters: [value.replace("*", "...")],
+                });
+                return users.map((u) => u.user);
+            }
         );
     }
 }
@@ -246,13 +317,23 @@ class ClientFilter extends FilterItem<string> {
     }
 
     public async chooseValue(): Promise<SearchFilterValue<string> | undefined> {
+        const client = this._provider.client;
+        if (!client) {
+            throw new Error("No client selected");
+        }
         return pickFromProviderOrCustom(
             this._filter.placeHolder,
             this.value,
             this._provider.client,
             this._provider.client?.clientName,
             "perforce client",
-            this._provider.client?.clientName
+            async (value) => {
+                const clients = await p4.clients(client.configSource, {
+                    max: 200,
+                    nameFilter: value.replace("*", "..."),
+                });
+                return clients.map((c) => c.client);
+            }
         );
     }
 }
@@ -393,10 +474,6 @@ export class FileFilterRoot extends SelfExpandingTreeItem<
     }
 
     private async pickNewFilter() {
-        const custom: PickWithValue<string> = {
-            label: "Enter path...",
-            description: "Enter a file or depot path",
-        };
         const rootPath = this.getClientRootPath();
         const clientRoot: PickWithValue<string> | undefined = rootPath
             ? {
@@ -416,23 +493,42 @@ export class FileFilterRoot extends SelfExpandingTreeItem<
                 : undefined;
 
         const existingChildren = this.getChildren();
-        const options = [clientRoot, clientSource, ...this.makeOpenFilePicks(), custom]
+        const options = [clientRoot, clientSource, ...this.makeOpenFilePicks()]
             .filter(isTruthy)
             .filter(
                 (opt) =>
                     !existingChildren.some((existing) => existing.label === opt.value)
             );
 
-        const chosen = await vscode.window.showQuickPick(options, {
-            matchOnDescription: true,
-            placeHolder: "Filter by a depot or file path",
-        });
+        const customDescription = "Type a path";
+        const chosen = await showComboBoxInput(
+            options,
+            {
+                matchOnDescription: true,
+                placeHolder: "Filter by a depot or file path",
+            },
+            (value) => {
+                return [
+                    {
+                        label: value ? "Entered path: " + value : "Enter a path",
+                        description: value ? "" : customDescription,
+                        detail: value
+                            ? "\xa0".repeat(4) + "Use ... for wildcards"
+                            : undefined,
+                        alwaysShow: true,
+                        value: value,
+                    },
+                ];
+            }
+        );
 
         if (!chosen) {
             return;
         }
 
-        return chosen === custom ? await this.enterCustomValue() : chosen.value;
+        return chosen.description === customDescription && !chosen.value
+            ? await this.enterCustomValue()
+            : chosen.value;
     }
 
     async addNewFilter() {

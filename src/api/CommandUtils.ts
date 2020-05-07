@@ -84,12 +84,13 @@ function makeFlag(
     flag: string,
     value: string | boolean | number | undefined
 ): CmdlineArgs {
+    const flagName = "-" + flag;
     if (typeof value === "string") {
-        return value ? ["-" + flag, value] : [];
+        return [flagName, value];
     } else if (typeof value === "number") {
-        return value ? ["-" + flag, value.toString()] : [];
+        return [flagName, value.toString()];
     }
-    return value ? ["-" + flag] : [];
+    return value ? [flagName] : [];
 }
 
 export function makeFlags(
