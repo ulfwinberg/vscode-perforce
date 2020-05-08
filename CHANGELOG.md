@@ -1,5 +1,37 @@
 # Change log
 
+## [4.6.0] - 2020-05-08
+
+A few quality of life improvements to quick picks and searching
+
+* In the world of quick picks:
+  * Add a 'job' quick pick - click on a job from the changelist quick pick to see job details and other changelists fixing the same job
+  * Clicking on a shelved file from the changelist quick pick now shows options for the shelved file such as viewing and diffing the shelved file
+  * When unshelving a changelist through a branch mapping (via the change quick pick), entering `*` in the branch name will act as a wildcard and search for matching branches
+  * The changelist quick pick now includes the changelist status (pending / submitted) in its title
+  * Add 'go to job' and 'go to changelist' commands, accessible from the SCM provider's context menu and the command palette
+  * Add 'open last quick pick' / 'open recent quick pick' to the SCM provider's context menu and the command palette
+* In the changelist search:
+  * Changelist search results now show shelved files, if there are any
+  * When entering user and client filters, entering `*` will act as a wildcard and search for matching users / clients
+  * When entering user, client and path filters, you no longer need to click on the 'Enter a {thing}' option before entering the text, you can just start typing straight away
+* When logging in from the command palette, and you have multiple perforce clients in your workspace, it will now prompt to ask you which one to log in with
+* Add a variety of new keyboard shortcuts for common actions (in addition to the existing shortcuts):
+
+| shortcut           | action                | Description |
+|--------------------|-----------------------|-------------|
+| `alt+p alt+d`      | perforce.diffRevision | Choose a revision of the open file to diff against |
+| `alt+p h`          | perforce.showOpenFileHistory | Show file history for the open file |
+| `alt+p m`          | perforce.move | Move or rename the current file |
+| `alt+p p`          | perforce.showLastQuickPick | Show the last opened quick pick |
+| `alt+p alt+p`      | perforce.showRecentQuickPick | Choose a recently opened quick pick to reopen |
+| `alt+p down`       | perforce.syncOpenFile | Sync the open file |
+| `alt+p alt+down`   | perforce.syncOpenFileRevision | Choose a specific revision of the open file to sync |
+| `alt+p shift+down` | perforce.Sync | Sync everything (just run p4 sync) |
+| `alt+p left`       | perforce.diffPrevious | Diff the open file against the previous revision |
+| `alt+p right`      | perforce.diffNext | Go to the next revision for the open diff |
+| `alt+p up`         | perforce.submitSingle | Submit the current file (provided it is open in the default changelist) |
+
 ## [4.5.0] - 2020-05-03
 
 * Add new commands to the explorer context menu. If you don't like them, each section can be disabled using the settings that start with `perforce.explorer.`...
@@ -345,6 +377,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.6.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.5.0...4.6.0
 [4.5.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.2...4.5.0
 [4.4.2]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.1...4.4.2
 [4.4.1]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.0...4.4.1
