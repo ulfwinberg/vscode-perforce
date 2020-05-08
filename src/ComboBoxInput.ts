@@ -25,6 +25,10 @@ export async function showComboBoxInput<T extends vscode.QuickPickItem>(
     provideInputItems: (value: string) => T[]
 ) {
     const quickPick = vscode.window.createQuickPick<T>();
+
+    const subscriptions: vscode.Disposable[] = [quickPick];
+    const dispose = () => subscriptions.forEach((sub) => sub.dispose());
+
     quickPick.matchOnDescription = options.matchOnDescription ?? false;
     quickPick.matchOnDetail = options.matchOnDetail ?? false;
     quickPick.ignoreFocusOut = options.ignoreFocusOut ?? false;
@@ -33,23 +37,31 @@ export async function showComboBoxInput<T extends vscode.QuickPickItem>(
     quickPick.items = insertItem(items, def, options.insertBeforeIndex);
 
     let providedItems = new Set<T>(def);
-    quickPick.onDidChangeValue((value) => {
-        const provided = provideInputItems(value);
-        quickPick.items = quickPick.items
-            .filter((item) => !providedItems.has(item))
-            .concat(provided);
-        providedItems = new Set(provided);
-        quickPick.activeItems = provided.slice(-1);
-    });
+    subscriptions.push(
+        quickPick.onDidChangeValue((value) => {
+            const provided = provideInputItems(value);
+            quickPick.items = quickPick.items
+                .filter((item) => !providedItems.has(item))
+                .concat(provided);
+            providedItems = new Set(provided);
+            quickPick.activeItems = provided.slice(-1);
+        })
+    );
 
     const promise = new Promise<T | undefined>((resolve) => {
-        quickPick.onDidAccept(() => {
-            resolve(quickPick.selectedItems[0]);
-            quickPick.hide();
-        });
-        quickPick.onDidHide(() => {
-            resolve(undefined);
-        });
+        subscriptions.push(
+            quickPick.onDidAccept(() => {
+                resolve(quickPick.selectedItems[0]);
+                quickPick.hide();
+                dispose();
+            })
+        );
+        subscriptions.push(
+            quickPick.onDidHide(() => {
+                resolve(undefined);
+                dispose();
+            })
+        );
     });
     quickPick.show();
     return promise;
