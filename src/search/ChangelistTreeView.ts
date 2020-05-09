@@ -340,7 +340,11 @@ abstract class SearchResultTree extends SelfExpandingTreeItem<SearchResultItem> 
     }
 
     protected async populateChangeDetails() {
+        if (this._results.length < 1) {
+            return;
+        }
         const allChanges = this._results.map((r) => r.chnum);
+
         const descriptions = await p4.describe(this._resource, {
             omitDiffs: true,
             chnums: allChanges,
@@ -359,6 +363,9 @@ abstract class SearchResultTree extends SelfExpandingTreeItem<SearchResultItem> 
             const couldHaveShelved = this._results
                 .filter((r) => r.isPending)
                 .map((r) => r.chnum);
+            if (couldHaveShelved.length < 1) {
+                return;
+            }
             const shelvedDescriptions = await p4.describe(this._resource, {
                 omitDiffs: true,
                 chnums: couldHaveShelved,
