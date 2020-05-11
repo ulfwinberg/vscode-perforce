@@ -2,7 +2,7 @@
     "name": "perforce",
     "displayName": "Perforce for VS Code",
     "description": "(2020 Fork) Perforce integration with VS Code's SCM features",
-    "version": "4.6.0",
+    "version": "4.7.0",
     "publisher": "mjcrouch",
     "license": "MIT",
     "categories": [
@@ -1579,7 +1579,7 @@
         "glob": "^7.1.6",
         "javascript-time-ago": "^2.0.7",
         "micromatch": "^4.0.2",
-        "mocha": "^7.1.0",
+        "mocha": "^7.1.2",
         "mocha-junit-reporter": "^1.23.3",
         "prettier": "^2.0.5",
         "sinon": "^9.0.0",

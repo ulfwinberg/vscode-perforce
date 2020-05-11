@@ -1,5 +1,11 @@
 # Change log
 
+## [4.7.0] - 2020-05-11
+
+* Add the ability to edit the full change spec for a changelist in the editor - accessible from the SCM context menu and the changelist quick pick
+* Add the ability to edit the job spec for a job, accessible from the job quick pick
+* Fix status bar errors showing when there were no results for a search, or no results with shelved files
+
 ## [4.6.0] - 2020-05-08
 
 A few quality of life improvements to quick picks and searching
@@ -377,6 +383,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.7.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.6.0...4.7.0
 [4.6.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.5.0...4.6.0
 [4.5.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.2...4.5.0
 [4.4.2]: https://github.com/mjcrouch/vscode-perforce/compare/4.4.1...4.4.2
