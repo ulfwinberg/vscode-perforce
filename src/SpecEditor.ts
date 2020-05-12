@@ -32,12 +32,21 @@ abstract class SpecEditor {
         this._subscriptions.forEach((sub) => sub.dispose());
     }
 
+    /**
+     * Get the full spec text for the item
+     * @param item the id for the item (e.g. changelist or job), or "new" to create a new item
+     * @returns the full text of the object
+     */
     protected abstract getSpecText(resource: vscode.Uri, item: string): Promise<string>;
+    /**
+     * Input the spec text
+     * @returns The new item if it has changed - for example when creating a new changelist
+     */
     protected abstract inputSpecText(
         resource: vscode.Uri,
         item: string,
         text: string
-    ): Promise<any>;
+    ): Promise<string | undefined>;
 
     private get mapName() {
         return this._type + "Map";
@@ -130,10 +139,15 @@ abstract class SpecEditor {
             "\n\n# When you are done editing, click the 'apply spec' button\n# on this editor's toolbar to apply the edit to the perforce server";
         const file = await this.createSpecFile(item, withMessage);
         await this.setResource(file, resource);
-        await vscode.window.showTextDocument(file, { preview: false });
+        await vscode.window.showTextDocument(file, { preview: item === "new" });
         SpecEditor.checkTabSettings();
     }
 
+    /**
+     * Open a new editor containing a spec to edit
+     * @param resource context for running perforce commands
+     * @param item the id of the item (e.g. changelist number of job)
+     */
     async editSpec(resource: vscode.Uri, item: string) {
         await vscode.window.withProgress(
             {
@@ -156,7 +170,7 @@ abstract class SpecEditor {
         return Path.basename(file).split(".")[0];
     }
 
-    async validateAndGetResource(doc: vscode.TextDocument) {
+    private async validateAndGetResource(doc: vscode.TextDocument) {
         const file = doc.uri;
         const filename = Path.basename(file.fsPath);
         if (!this.isValidSpecFilename(filename)) {
@@ -183,15 +197,23 @@ abstract class SpecEditor {
     async inputSpec(doc: vscode.TextDocument) {
         try {
             const { item, resource, text } = await this.validateAndGetResource(doc);
-            await vscode.window.withProgress(
+            const newItem = await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Window,
                     title: "Uploading spec for " + this._type + " " + item,
                 },
                 () => this.inputSpecText(resource, item, text)
             );
+
+            if (
+                newItem &&
+                newItem !== item &&
+                vscode.window.activeTextEditor?.document === doc
+            ) {
+                vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+            }
             // re-open with new values - old job specs are not valid because of the timestamp
-            this.editSpec(resource, item);
+            this.editSpec(resource, newItem ?? item);
         } catch (err) {
             Display.showImportantError(err);
         }
@@ -216,14 +238,16 @@ abstract class SpecEditor {
                 const item = this.getSpecItemName(doc.fileName);
                 const ok = "Apply now";
                 this._hasUnresolvedPrompt = true;
-                const chosen = await vscode.window.showInformationMessage(
-                    "Apply your changes to the spec for " +
-                        this._type +
-                        " " +
-                        item +
-                        " on the perforce server now?",
-                    ok
-                );
+
+                const message =
+                    item === "new"
+                        ? "Create new " + this._type + " on the perforce server now?"
+                        : "Apply your changes to the spec for " +
+                          this._type +
+                          " " +
+                          item +
+                          " on the perforce server now?";
+                const chosen = await vscode.window.showInformationMessage(message, ok);
                 this._hasUnresolvedPrompt = false;
                 if (chosen === ok) {
                     this.inputSpec(doc);
@@ -239,12 +263,14 @@ class ChangeSpecEditor extends SpecEditor {
     }
 
     protected getSpecText(resource: vscode.Uri, item: string) {
-        return p4.outputChange(resource, { existingChangelist: item });
+        const chnum = item === "new" ? undefined : item;
+        return p4.outputChange(resource, { existingChangelist: chnum });
     }
     protected async inputSpecText(resource: vscode.Uri, item: string, text: string) {
         const output = await p4.inputRawChangeSpec(resource, { input: text });
         Display.showMessage(output.rawOutput);
         PerforceSCMProvider.RefreshAll();
+        return output.chnum ?? item;
     }
 }
 
@@ -254,11 +280,13 @@ class JobSpecEditor extends SpecEditor {
     }
 
     protected getSpecText(resource: vscode.Uri, item: string) {
-        return p4.outputJob(resource, { existingJob: item });
+        const job = item === "new" ? undefined : item;
+        return p4.outputJob(resource, { existingJob: job });
     }
     protected async inputSpecText(resource: vscode.Uri, item: string, text: string) {
-        await p4.inputRawJobSpec(resource, { input: text });
-        Display.showMessage("Job " + item + " updated");
+        const output = await p4.inputRawJobSpec(resource, { input: text });
+        Display.showMessage(output.rawOutput);
+        return output.job ?? item;
     }
 }
 
