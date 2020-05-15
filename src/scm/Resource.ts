@@ -25,6 +25,7 @@ export class Resource implements SourceControlResourceState {
     private _statuses: Status[];
     private _headType: IFileType;
     private _resourceUri: Uri;
+    private _openUri: Uri;
     private _fromFile?: Uri;
     private _fromEndRev?: string;
     private _isUnresolved: boolean;
@@ -39,8 +40,8 @@ export class Resource implements SourceControlResourceState {
     private _workingRevision: string;
 
     /**
-     * URI is always a depot path stored as a URI (depot paths are not really URIs, but it is close enough,
-     * and the SourceControlResourceState requires this property to be a URI)
+     * URI is always a depot path stored as a URI, without a revision
+     * (depot paths are not really URIs, but it is close enough)
      *
      * You **must not** use fsPath on this URI to get a depot path - this does not work on windows.
      * Use the `depotPath` property instead.
@@ -48,14 +49,42 @@ export class Resource implements SourceControlResourceState {
     get uri(): Uri {
         return this._uri;
     }
+
     /**
-     * Resource URI *should* be the underlying file, but for shelved files, a depot path is used
+     * The URI to use to open this resource. For example a shelved file including the changelist or label
+     *
+     */
+    get openUri() {
+        return this._openUri;
+    }
+    /**
+     * Resource URI *should* be the underlying file, but for shelved files, a depot path is used.
+     * This is used for display in the SCM provider - so the depot path does not include a revision
+     *
+     * **DO NOT USE** this function - so we are free to change the display without impacting other areas.
+     * Use `actionUriNoRev` instead
      *
      * this keeps them together in the workspace tree, and for some operations there may not be a matching file in the workspace
      */
     get resourceUri(): Uri {
         return this._resourceUri;
     }
+
+    /**
+     * The file to use for performing perforce actions that don't require a revision,
+     * could be depot or local file
+     *
+     * Currently, resource URI has no rev, but this should be used instead of
+     * resource URI for clarity and so we can change the display in future
+     */
+    get actionUriNoRev(): Uri {
+        return this._resourceUri;
+    }
+
+    get basenameWithoutRev(): string {
+        return PerforceUri.basenameWithoutRev(this.uri);
+    }
+
     get decorations(): SourceControlResourceDecorations {
         return DecorationProvider.getDecorations(
             this._statuses,
@@ -76,7 +105,7 @@ export class Resource implements SourceControlResourceState {
         return PerforceUri.getDepotPathFromDepotUri(this._uri);
     }
     /**
-     * The base file from which this file is pending integration - a depot path as a URI
+     * The base file from which this file is pending integration - a depot path as a URI, including revision
      *
      * You **must not** use fsPath on this URI to get a depot path - this does not work on windows.
      * Use `Utils.getDepotPathFromDepotUri` instead
@@ -138,7 +167,8 @@ export class Resource implements SourceControlResourceState {
 
         if (this._isShelved) {
             // force a depot-like path as the resource URI, to sort them together in the tree
-            this._resourceUri = PerforceUri.fromUriWithRevision(_uri, "@=" + this.change);
+            this._resourceUri = PerforceUri.fromUri(_uri);
+            this._openUri = PerforceUri.fromUriWithRevision(_uri, "@=" + this.change);
             this._isUnresolved = false;
             this._isReresolvable = false;
         } else {
@@ -148,6 +178,7 @@ export class Resource implements SourceControlResourceState {
                 );
             }
             this._resourceUri = _underlyingUri;
+            this._openUri = _underlyingUri;
             this._isUnresolved = !!fstatInfo["unresolved"];
             this._isReresolvable = !!fstatInfo["reresolvable"];
             // TODO - do we need the one with the working revision - can't use a perforce: scheme here as it should be a local file

@@ -20,7 +20,6 @@ import * as PerforceUri from "../PerforceUri";
 import { Display, ActiveStatusEvent, ActiveEditorStatus } from "../Display";
 import { Resource } from "./Resource";
 
-import * as Path from "path";
 import * as vscode from "vscode";
 import { DebouncedFunction, debounce } from "../Debounce";
 import * as p4 from "../api/PerforceApi";
@@ -241,7 +240,7 @@ export class Model implements Disposable {
         if (cachedHave !== undefined) {
             return cachedHave;
         }
-        const ret = await p4.haveFile(uri, { file: { fsPath: uri.fsPath } });
+        const ret = await p4.haveFile(uri, { file: uri });
 
         this._knownHaveListByPath.set(uri.fsPath, ret);
 
@@ -522,13 +521,12 @@ export class Model implements Disposable {
         if (input instanceof Resource) {
             if (input.isShelved) {
                 Display.showImportantError(
-                    "Revert cannot be used on shelved file: " +
-                        Path.basename(input.uri.fsPath)
+                    "Revert cannot be used on shelved file: " + input.basenameWithoutRev
                 );
                 return;
             }
-            opts.paths = [{ fsPath: input.resourceUri.fsPath }];
-            message += "to file " + Path.basename(input.resourceUri.fsPath) + "?";
+            opts.paths = [input.actionUriNoRev];
+            message += "to file " + input.basenameWithoutRev + "?";
         } else if (isResourceGroup(input)) {
             opts.paths = ["//..."];
             opts.chnum = input.chnum;
@@ -682,13 +680,12 @@ export class Model implements Disposable {
     async showResolveWarningForFile(input: Resource) {
         const resolveButton = "Resolve file";
         const chosen = await vscode.window.showWarningMessage(
-            Path.basename(input.resourceUri.fsPath) +
-                " was unshelved, but needs resolving",
+            input.basenameWithoutRev + " was unshelved, but needs resolving",
             resolveButton
         );
         if (chosen === resolveButton) {
             await p4.resolve(this._workspaceUri, {
-                files: [input.resourceUri],
+                files: [input.actionUriNoRev],
             });
         }
     }
@@ -700,7 +697,7 @@ export class Model implements Disposable {
         }
 
         if (mode === FileShelveMode.PROMPT) {
-            const file = Path.basename(input.resourceUri.fsPath);
+            const file = input.basenameWithoutRev;
             const message = file + " was unshelved. Delete the shelved file?";
             const yes = "Delete " + file + "@=" + input.change;
             const always = "Always";
@@ -738,7 +735,7 @@ export class Model implements Disposable {
         }
 
         if (mode === FileShelveMode.PROMPT) {
-            const file = Path.basename(input.resourceUri.fsPath);
+            const file = input.basenameWithoutRev;
             const message = file + " was shelved. Revert the open file?";
             const yes = "Revert " + file;
             const always = "Always";
@@ -760,7 +757,7 @@ export class Model implements Disposable {
             }
         }
 
-        await p4.revert(this._workspaceUri, { paths: [input.resourceUri] });
+        await p4.revert(this._workspaceUri, { paths: [input.actionUriNoRev] });
         this.Refresh();
     }
 
@@ -783,7 +780,7 @@ export class Model implements Disposable {
         await p4.shelve(this._workspaceUri, {
             chnum: input.change,
             force: true,
-            paths: [{ fsPath: input.resourceUri.fsPath }],
+            paths: [input.actionUriNoRev],
         });
         this.Refresh();
         await this.revertFileAfterUnshelve(input);
@@ -816,7 +813,7 @@ export class Model implements Disposable {
     public async DeleteShelvedFile(input: Resource): Promise<void> {
         if (!input.isShelved) {
             Display.showImportantError(
-                "Shelve cannot be used on normal file: " + Path.basename(input.uri.fsPath)
+                "Shelve cannot be used on normal file: " + input.basenameWithoutRev
             );
             return;
         }
@@ -1000,9 +997,7 @@ export class Model implements Disposable {
         try {
             const output = await p4.reopenFiles(this._workspaceUri, {
                 chnum: chnum,
-                files: resources.map((resource) => {
-                    return { fsPath: resource.resourceUri.fsPath };
-                }),
+                files: resources.map((resource) => resource.actionUriNoRev),
             });
             Display.channel.append(output);
         } catch (reason) {

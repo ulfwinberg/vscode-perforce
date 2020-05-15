@@ -1,5 +1,5 @@
 import { Utils } from "../Utils";
-import { FileSpec, isFileSpec, PerforceFile, isUri } from "./CommonTypes";
+import { PerforceFile, isUri } from "./CommonTypes";
 import * as vscode from "vscode";
 import * as PerforceUri from "../PerforceUri";
 import { PerforceService } from "../PerforceService";
@@ -127,7 +127,7 @@ function lastArgAsStrings(
     if (typeof lastArg === "number") {
         return [lastArg.toString()];
     }
-    if (isFileSpec(lastArg)) {
+    if (isUri(lastArg)) {
         return [fileSpecToArg(lastArg, options?.ignoreRevisionFragments)];
     }
     if (options?.lastArgIsFormattedArray) {
@@ -181,11 +181,11 @@ export function fragmentAsSuffix(
     if (ignoreRevisionFragments) {
         return "";
     }
-    return fragment ? (fragment.startsWith("@") ? fragment : "#" + fragment) : "";
+    return PerforceUri.revOrLabelAsSuffix(fragment);
 }
 
-function fileSpecToArg(fileSpec: FileSpec, ignoreRevisionFragments?: boolean) {
-    if (isUri(fileSpec) && PerforceUri.isDepotUri(fileSpec)) {
+function fileSpecToArg(fileSpec: vscode.Uri, ignoreRevisionFragments?: boolean) {
+    if (PerforceUri.isDepotUri(fileSpec)) {
         return (
             PerforceUri.getDepotPathFromDepotUri(fileSpec) +
             fragmentAsSuffix(
@@ -195,15 +195,15 @@ function fileSpecToArg(fileSpec: FileSpec, ignoreRevisionFragments?: boolean) {
         );
     }
     return (
-        Utils.expansePath(fileSpec.fsPath) +
+        Utils.expansePath(PerforceUri.fsPathWithoutRev(fileSpec)) +
         fragmentAsSuffix(fileSpec.fragment, ignoreRevisionFragments)
     );
 }
 
-export function pathsToArgs(arr?: (string | FileSpec)[], options?: FlagMapperOptions) {
+export function pathsToArgs(arr?: PerforceFile[], options?: FlagMapperOptions) {
     return (
         arr?.map((path) => {
-            if (isFileSpec(path)) {
+            if (isUri(path)) {
                 return fileSpecToArg(path, options?.ignoreRevisionFragments);
             } else if (path) {
                 return path;
