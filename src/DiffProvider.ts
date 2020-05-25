@@ -172,6 +172,19 @@ async function diffPreviousFromWorking(fromDoc: Uri, fromDiffEditor?: boolean) {
     // can't put query params on to the fromDoc as a file: uri - it breaks some things in vs code, remote ssh and cpp extension
 }
 
+async function diffPreviousFromShelved(fromDoc: Uri, chnum: string) {
+    const fstat = await p4.getFstatInfo(fromDoc, {
+        depotPaths: [fromDoc],
+        limitToShelved: true,
+        chnum,
+    });
+    const rev = fstat[0]?.["workRev"];
+    if (rev) {
+        const leftWithRev = PerforceUri.withArgs(fromDoc, {}, rev);
+        await diffFiles(leftWithRev, fromDoc);
+    }
+}
+
 /**
  * Use the information provided in the right hand URI, about the left hand file, to perform the diff, if possible
  * @param fromDoc the current right hand URI
@@ -193,8 +206,11 @@ function diffPreviousUsingLeftInfo(fromDoc: Uri): boolean | Promise<void> {
 }
 
 async function diffPreviousUsingRevision(fromDoc: Uri, fromDiffEditor?: boolean) {
+    const revStr = PerforceUri.getRevOrAtLabel(fromDoc);
     const rev = parseInt(PerforceUri.getRevOrAtLabel(fromDoc));
-    if (isNaN(rev)) {
+    if (revStr.startsWith("@=")) {
+        await diffPreviousFromShelved(fromDoc, revStr.slice(2));
+    } else if (isNaN(rev)) {
         await diffPreviousFromWorking(fromDoc, fromDiffEditor);
     } else {
         await diffPreviousFrom(fromDoc);
@@ -310,7 +326,7 @@ function getLeftResource(
             case Status.MOVE_DELETE:
         }
     } else {
-        const emptyDoc = Uri.parse("perforce:EMPTY");
+        const emptyDoc = PerforceUri.emptyFileUri();
         // left hand side is the depot version
         switch (resource.status) {
             case Status.ADD:
@@ -345,7 +361,7 @@ function getLeftResource(
 
 // Gets the uri for the current version of the file (or the shelved version depending on the diff type).
 function getRightResource(resource: Resource, diffType: DiffType): Uri | undefined {
-    const emptyDoc = Uri.parse("perforce:EMPTY");
+    const emptyDoc = PerforceUri.emptyFileUri();
     if (diffType === DiffType.SHELVE_V_DEPOT) {
         switch (resource.status) {
             case Status.ADD:

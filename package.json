@@ -752,6 +752,18 @@
                 "icon": "$(sync)"
             },
             {
+                "command": "perforce.changeSearch.diffResult",
+                "title": "Show Diff",
+                "category": "Perforce",
+                "icon": "$(diff)"
+            },
+            {
+                "command": "perforce.changeSearch.openResultDoc",
+                "title": "Show Revision",
+                "category": "Perforce",
+                "icon": "$(file)"
+            },
+            {
                 "command": "perforce.showOpenFileHistory",
                 "title": "History - show open file history",
                 "category": "Perforce"
@@ -973,6 +985,14 @@
                 },
                 {
                     "command": "perforce.changeSearch.disableAutoRefresh",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.diffResult",
+                    "when": "0"
+                },
+                {
+                    "command": "perforce.changeSearch.openResultDoc",
                     "when": "0"
                 },
                 {
@@ -1440,6 +1460,16 @@
                     "command": "perforce.changeSearch.showInQuickPick",
                     "group": "inline@0",
                     "when": "view == perforce.searchChangelists && viewItem =~ /results/"
+                },
+                {
+                    "command": "perforce.changeSearch.openResultDoc",
+                    "group": "inline@0",
+                    "when": "view == perforce.searchChangelists && viewItem =~ /fileResult/ && viewItem =~ /openable/"
+                },
+                {
+                    "command": "perforce.changeSearch.diffResult",
+                    "group": "inline@1",
+                    "when": "view == perforce.searchChangelists && viewItem =~ /fileResult/ && viewItem =~ /diffable/"
                 }
             ]
         },

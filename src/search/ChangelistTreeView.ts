@@ -29,6 +29,8 @@ import { configAccessor } from "../ConfigService";
 import { showQuickPickForChangeSearch } from "../quickPick/ChangeSearchQuickPick";
 import { DescribedChangelist } from "../api/PerforceApi";
 import * as PerforceUri from "../PerforceUri";
+import { operationCreatesFile, GetStatus, operationDeletesFile } from "../scm/Status";
+import * as DiffProvider from "../DiffProvider";
 
 class ChooseProviderTreeItem extends SelfExpandingTreeItem<any> {
     constructor(private _providerSelection: ProviderSelection) {
@@ -181,7 +183,11 @@ class RunSearch extends SelfExpandingTreeItem<any> {
     tooltip = "Apply current filters";
 }
 
-class SearchResultShelvedFile extends SelfExpandingTreeItem<any> {
+interface Diffable {
+    perforceUri: vscode.Uri;
+}
+
+class SearchResultShelvedFile extends SelfExpandingTreeItem<any> implements Diffable {
     constructor(
         private _resource: vscode.Uri,
         private _file: p4.DepotFileOperation,
@@ -209,6 +215,34 @@ class SearchResultShelvedFile extends SelfExpandingTreeItem<any> {
             title: "Show shelved file quick pick",
         };
     }
+
+    get canDiff() {
+        const status = GetStatus(this._file.operation);
+        if (operationCreatesFile(status)) {
+            return false;
+        }
+        return true;
+    }
+    get canOpen() {
+        const status = GetStatus(this._file.operation);
+        return !operationDeletesFile(status);
+    }
+
+    get perforceUri() {
+        return PerforceUri.fromDepotPath(
+            this._resource,
+            this._file.depotPath,
+            "@=" + this._chnum
+        );
+    }
+
+    get contextValue() {
+        return (
+            "fileResult-shelved" +
+            (this.canDiff ? "-diffable" : "") +
+            (this.canOpen ? "-openable" : "")
+        );
+    }
 }
 
 class SearchResultShelvedSubTree extends SelfExpandingTreeItem<SearchResultShelvedFile> {
@@ -228,8 +262,12 @@ class SearchResultShelvedSubTree extends SelfExpandingTreeItem<SearchResultShelv
     }
 }
 
-class SearchResultFile extends SelfExpandingTreeItem<any> {
-    constructor(private _resource: vscode.Uri, private _file: p4.DepotFileOperation) {
+class SearchResultFile extends SelfExpandingTreeItem<any> implements Diffable {
+    constructor(
+        private _resource: vscode.Uri,
+        private _file: p4.DepotFileOperation,
+        private _change: DescribedChangelist
+    ) {
         super(_file.depotPath + "#" + _file.revision);
         this.description = _file.operation;
     }
@@ -252,6 +290,33 @@ class SearchResultFile extends SelfExpandingTreeItem<any> {
             title: "Show file quick pick",
         };
     }
+
+    get canDiff() {
+        return !this._change.isPending;
+    }
+    get canOpen() {
+        if (this._change.isPending) {
+            return false;
+        }
+        const status = GetStatus(this._file.operation);
+        return !operationDeletesFile(status);
+    }
+
+    get perforceUri() {
+        return PerforceUri.fromDepotPath(
+            this._resource,
+            this._file.depotPath,
+            this._file.revision
+        );
+    }
+
+    get contextValue() {
+        return (
+            "fileResult" +
+            (this.canDiff ? "-diffable" : "") +
+            (this.canOpen ? "-openable" : "")
+        );
+    }
 }
 
 class SearchResultItem extends SelfExpandingTreeItem<
@@ -272,7 +337,7 @@ class SearchResultItem extends SelfExpandingTreeItem<
     addDetails(detail: DescribedChangelist) {
         this.clearChildren();
         const files = detail.affectedFiles.map(
-            (file) => new SearchResultFile(this._resource, file)
+            (file) => new SearchResultFile(this._resource, file, detail)
         );
         files.forEach((file) => this.addChild(file));
         const curState = this.collapsibleState;
@@ -650,6 +715,15 @@ export function registerChangelistSearch() {
     vscode.commands.registerCommand(
         "perforce.changeSearch.disableAutoRefresh",
         (arg: RunSearch) => (arg.autoRefresh = false)
+    );
+
+    vscode.commands.registerCommand("perforce.changeSearch.diffResult", (arg: Diffable) =>
+        DiffProvider.diffPrevious(arg.perforceUri)
+    );
+
+    vscode.commands.registerCommand(
+        "perforce.changeSearch.openResultDoc",
+        (arg: Diffable) => vscode.window.showTextDocument(arg.perforceUri)
     );
 
     changelistTree = new ChangelistTreeRoot();
