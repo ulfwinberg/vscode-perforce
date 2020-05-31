@@ -1,5 +1,18 @@
 # Change log
 
+## [4.9.0] - 2020-05-31
+
+* Add buttons to the changelist search results, to open the depot version of the file, or its diff directly, without needing to use the quick pick menu
+* Add rudimentary support for using the `${workspaceFolder}` variable in the `perforce.command` setting (#153)
+  * This is experimental, in as much as:
+    * The behaviour may not always be intuitive in multi-root workspaces / files opened without workspaces
+      * It attempts to use the workspace folder for the file being operated on
+      * If this fails, it uses the 'first' open workspace
+      * If this fails, it is replaced with a blank string
+    * If official support for these expansions is ever added to VS code, this may not be backward compatible
+* Choosing to diff from the scm view when multiple items are selected now opens all of the selected diffs instead of just one (#155)
+* Fix error when opening the diff for a file opened for add (#156)
+
 ## [4.8.2] - 2020-05-20
 
 * Re-add revision numbers / labels, using a new, more correct approach (#150)
@@ -399,7 +412,8 @@ Otherwise, this version *should* be backward compatible. The following changes h
 
 * `edit` command on opened file
 * `revert` command on opened file
-
+* 
+[4.9.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.8.2...4.9.0
 [4.8.2]: https://github.com/mjcrouch/vscode-perforce/compare/4.8.1...4.8.2
 [4.8.1]: https://github.com/mjcrouch/vscode-perforce/compare/4.8.0...4.8.1
 [4.8.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.7.0...4.8.0
