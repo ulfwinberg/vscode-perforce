@@ -18,6 +18,7 @@ import * as p4 from "./api/PerforceApi";
 import { isTruthy } from "./TsUtils";
 import { registerChangelistSearch } from "./search/ChangelistTreeView";
 import { createSpecEditor } from "./SpecEditor";
+import { clearAllMementos } from "./MementoItem";
 
 let _isRegistered = false;
 const _disposable: vscode.Disposable[] = [];
@@ -444,7 +445,15 @@ async function checkForSlevesque(ctx: vscode.ExtensionContext) {
     }
 }
 
+let _context: vscode.ExtensionContext;
+
 export async function activate(ctx: vscode.ExtensionContext) {
+    _context = ctx;
+    // register FIRST in case any memento state causes exceptions later, preventing it
+    // from being registered
+    _disposable.push(
+        vscode.commands.registerCommand("perforce.clearMementos", () => clearMementos())
+    );
     // ALWAYS register the edit and save command
     PerforceCommands.registerImportantCommands(_disposable);
     createSpecEditor(ctx);
@@ -454,7 +463,6 @@ export async function activate(ctx: vscode.ExtensionContext) {
     );
 
     checkForSlevesque(ctx);
-
     const activationMode = vscode.workspace
         .getConfiguration("perforce")
         .get("activationMode");
@@ -524,7 +532,7 @@ function doOneTimeRegistration() {
         // todo: fix dependency / order of operations issues
         PerforceCommands.registerCommands();
         PerforceSCMProvider.registerCommands();
-        registerChangelistSearch();
+        registerChangelistSearch(_context);
     }
 }
 
@@ -749,5 +757,17 @@ function onDidCloseTextDocument(event: vscode.TextDocument) {
         );
         const removed = PerforceSCMProvider.disposeInstancesWithoutContributors();
         logFileMessage(event.uri, "Removed " + removed.length + " SCM providers");
+    }
+}
+
+async function clearMementos() {
+    const ok = "Clear workspace state";
+    const choice = await vscode.window.showWarningMessage(
+        "This will clear persisted cache data. This only applies to a small number of items such as search filters and change specifications.\nThis option is only here in case of unexpected bugs.\nYou will probably need to restart VS Code to see any effect. Continue?",
+        { modal: true },
+        ok
+    );
+    if (choice === ok) {
+        await clearAllMementos(_context.workspaceState, _context.globalState);
     }
 }
