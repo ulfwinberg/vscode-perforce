@@ -29,7 +29,6 @@
         "vscode",
         "scm",
         "perforce",
-        "sourcedepot",
         "multi-root ready"
     ],
     "main": "./dist/extension",
