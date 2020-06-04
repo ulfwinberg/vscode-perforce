@@ -1,5 +1,10 @@
 # Change log
 
+## [4.10.0] - 2020-06-04
+
+* Persist search filters between sessions for a given workspace
+* Fix an issue where commands used to display perforce output in the editor didn't work (e.g. describe changelist, show job spec)
+
 ## [4.9.0] - 2020-05-31
 
 * Add buttons to the changelist search results, to open the depot version of the file, or its diff directly, without needing to use the quick pick menu
@@ -412,7 +417,8 @@ Otherwise, this version *should* be backward compatible. The following changes h
 
 * `edit` command on opened file
 * `revert` command on opened file
-* 
+
+[4.10.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.9.0...4.10.0
 [4.9.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.8.2...4.9.0
 [4.8.2]: https://github.com/mjcrouch/vscode-perforce/compare/4.8.1...4.8.2
 [4.8.1]: https://github.com/mjcrouch/vscode-perforce/compare/4.8.0...4.8.1
