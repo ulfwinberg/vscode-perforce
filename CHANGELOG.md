@@ -1,5 +1,10 @@
 # Change log
 
+## [4.11.0] - 2020-05-26
+
+* Add an icon to the changelist search view that will be visible if the view is dragged to its own container in the sidebar, where the local folder has different case to the server folder
+* The minimum vs code version is now 1.46
+
 ## [4.10.0] - 2020-06-04
 
 * Persist search filters between sessions for a given workspace
