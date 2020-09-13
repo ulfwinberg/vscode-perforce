@@ -22,7 +22,7 @@
         "theme": "dark"
     },
     "engines": {
-        "vscode": "^1.46.0"
+        "vscode": "^1.49.0"
     },
     "enableProposedApi": false,
     "keywords": [
@@ -539,6 +539,12 @@
             {
                 "command": "perforce.Refresh",
                 "title": "Refresh",
+                "category": "Perforce",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "perforce.CleanRefresh",
+                "title": "Refresh (clean)",
                 "category": "Perforce",
                 "icon": "$(refresh)"
             },
@@ -1087,12 +1093,17 @@
                 },
                 {
                     "command": "perforce.Sync",
-                    "group": "1_sync",
+                    "group": "1_sync@3",
                     "when": "scmProvider == perforce"
                 },
                 {
                     "command": "perforce.Refresh",
-                    "group": "1_sync",
+                    "group": "1_sync@1",
+                    "when": "scmProvider == perforce"
+                },
+                {
+                    "command": "perforce.CleanRefresh",
+                    "group": "1_sync@2",
                     "when": "scmProvider == perforce"
                 },
                 {
@@ -1199,12 +1210,12 @@
                 },
                 {
                     "command": "perforce.resolveChangelist",
-                    "when": "scmProvider == perforce && scmResourceGroup =~ /unres/",
+                    "when": "scmProvider == perforce && scmResourceGroup in perforce.changes.resolvable",
                     "group": "1_resolve@1"
                 },
                 {
                     "command": "perforce.reresolveChangelist",
-                    "when": "scmProvider == perforce && scmResourceGroup =~ /reres/",
+                    "when": "scmProvider == perforce && scmResourceGroup in perforce.changes.reresolvable",
                     "group": "1_resolve@2"
                 },
                 {
