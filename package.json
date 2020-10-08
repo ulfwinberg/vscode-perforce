@@ -22,7 +22,7 @@
         "theme": "dark"
     },
     "engines": {
-        "vscode": "^1.49.0"
+        "vscode": "^1.50.0"
     },
     "enableProposedApi": false,
     "keywords": [
@@ -492,37 +492,37 @@
             },
             {
                 "command": "perforce.explorer.syncPath",
-                "title": "Perforce: Sync",
+                "title": "Sync",
                 "category": "Perforce"
             },
             {
                 "command": "perforce.explorer.add",
-                "title": "Perforce: Add file(s)",
+                "title": "Add file(s)",
                 "category": "Perforce"
             },
             {
                 "command": "perforce.explorer.edit",
-                "title": "Perforce: Edit file(s)",
+                "title": "Edit file(s)",
                 "category": "Perforce"
             },
             {
                 "command": "perforce.explorer.revert",
-                "title": "Perforce: Revert file(s)",
+                "title": "Revert file(s)",
                 "category": "Perforce"
             },
             {
                 "command": "perforce.explorer.revertUnchanged",
-                "title": "Perforce: Revert unchanged file(s)",
+                "title": "Revert unchanged file(s)",
                 "category": "Perforce"
             },
             {
                 "command": "perforce.explorer.move",
-                "title": "Perforce: Move / Rename",
+                "title": "Move / Rename",
                 "category": "Perforce"
             },
             {
                 "command": "perforce.explorer.delete",
-                "title": "Perforce: Delete file(s)",
+                "title": "Delete file(s)",
                 "category": "Perforce"
             },
             {
@@ -874,6 +874,12 @@
                 "command": "perforce.clearMementos",
                 "title": "Clear persisted memento data",
                 "category": "Perforce"
+            }
+        ],
+        "submenus": [
+            {
+                "id": "perforce.explorer",
+                "label": "Perforce"
             }
         ],
         "menus": {
@@ -1477,6 +1483,13 @@
                 }
             ],
             "explorer/context": [
+                {
+                    "submenu": "perforce.explorer",
+                    "group": "perforce",
+                    "when": "config.perforce.explorer.showSyncCommands && perforce.activation.hasScmProvider || config.perforce.explorer.showBasicOpCommands && perforce.activation.hasScmProvider || config.perforce.explorer.showFileOpCommands && perforce.activation.hasScmProvider"
+                }
+            ],
+            "perforce.explorer": [
                 {
                     "command": "perforce.explorer.syncPath",
                     "group": "perforce1-sync@1",
