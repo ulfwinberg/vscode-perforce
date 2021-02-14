@@ -1,6 +1,6 @@
 # Change log
 
-## [4.15.0] - 2020-14-02
+## [4.15.0] - 2020-02-14
 
 * Add file explorer decorations for open files (#201)
 * Ths minimum VS Code version is now 1.53
