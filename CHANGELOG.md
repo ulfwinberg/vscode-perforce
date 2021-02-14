@@ -1,5 +1,10 @@
 # Change log
 
+## [4.15.0] - 2020-14-02
+
+* Add file explorer decorations for open files (#201)
+* Ths minimum VS Code version is now 1.53
+
 ## [4.14.0] - 2020-10-08
 
 * Tidy up the context commands for individual files in the SCM view
@@ -451,6 +456,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.15.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.14.0...4.15.0
 [4.14.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.13.0...4.14.0
 [4.13.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.12.0...4.13.0
 [4.12.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.11.0...4.12.0
