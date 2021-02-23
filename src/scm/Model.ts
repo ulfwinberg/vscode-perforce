@@ -1264,6 +1264,7 @@ export class Model implements Disposable, vscode.FileDecorationProvider {
         this._pendingGroups.forEach((group) => {
             if (!usedGroups.includes(group.group)) {
                 group.group.dispose();
+                this._pendingGroups.delete(group.group.chnum);
             }
         });
     }
