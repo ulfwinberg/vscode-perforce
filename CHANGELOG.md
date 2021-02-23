@@ -1,5 +1,9 @@
 # Change log
 
+## [4.15.1] - 2020-02-23
+
+* Fix an issue where the count shown on the scm badge was incorrect after submitting a changelist (#205)
+
 ## [4.15.0] - 2020-02-14
 
 * Add file explorer decorations for open files (#201)
@@ -456,6 +460,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.15.1]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.0...4.15.1
 [4.15.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.14.0...4.15.0
 [4.14.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.13.0...4.14.0
 [4.13.0]: https://github.com/mjcrouch/vscode-perforce/compare/4.12.0...4.13.0
