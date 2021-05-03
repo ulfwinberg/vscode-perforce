@@ -1,10 +1,10 @@
 # Change log
 
-## [4.15.1] - 2020-02-23
+## [4.15.1] - 2021-02-23
 
 * Fix an issue where the count shown on the scm badge was incorrect after submitting a changelist (#205)
 
-## [4.15.0] - 2020-02-14
+## [4.15.0] - 2021-02-14
 
 * Add file explorer decorations for open files (#201)
 * Ths minimum VS Code version is now 1.53
