@@ -3,7 +3,7 @@
 ## [4.15.3] - 2022-07-24
 
 * Fix an issue where opening search results in the editor could stop the extension from working (#234)
-* 
+
 ## [4.15.2] - 2021-05-09
 
 * Fix the inability to attach perforce jobs that contain non-alphanumeric characters (#208)
