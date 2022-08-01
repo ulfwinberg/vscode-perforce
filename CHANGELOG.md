@@ -1,5 +1,9 @@
 # Change log
 
+## [4.15.4] - 2022-08-01
+
+* Fix an issue where the 'opened' command from the status bar menu failed to open the selected file
+
 ## [4.15.3] - 2022-07-24
 
 * Fix an issue where opening search results in the editor could stop the extension from working (#234)
@@ -469,6 +473,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.15.4]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.3...4.15.4
 [4.15.3]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.2...4.15.3
 [4.15.2]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.1...4.15.2
 [4.15.1]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.0...4.15.1
