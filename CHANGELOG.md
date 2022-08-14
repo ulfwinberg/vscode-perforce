@@ -1,5 +1,9 @@
 # Change log
 
+## [4.15.5] - 2022-08-14
+
+* Add setting `perforce.debugP4Commands` that logs all commands and their output to the javascript debug console (use 'Toggle developer tools' command to view)
+
 ## [4.15.4] - 2022-08-01
 
 * Fix an issue where the 'opened' command from the status bar menu failed to open the selected file
@@ -473,6 +477,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.15.5]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.4...4.15.5
 [4.15.4]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.3...4.15.4
 [4.15.3]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.2...4.15.3
 [4.15.2]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.1...4.15.2
