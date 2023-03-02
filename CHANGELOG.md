@@ -1,5 +1,9 @@
 # Change log
 
+## [4.15.6] - 2023-03-02
+
+* Work around vscode/#17588 where extension would not properly initialize
+  
 ## [4.15.5] - 2022-08-14
 
 * Add setting `perforce.debugP4Commands` that logs all commands and their output to the javascript debug console (use 'Toggle developer tools' command to view)
@@ -477,6 +481,7 @@ Otherwise, this version *should* be backward compatible. The following changes h
 * `edit` command on opened file
 * `revert` command on opened file
 
+[4.15.6]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.5...4.15.6
 [4.15.5]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.4...4.15.5
 [4.15.4]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.3...4.15.4
 [4.15.3]: https://github.com/mjcrouch/vscode-perforce/compare/4.15.2...4.15.3
