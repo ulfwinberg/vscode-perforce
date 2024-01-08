@@ -85,7 +85,7 @@ export class PerforceSCMProvider {
         return "perforce";
     }
     public get label(): string {
-        return "Perforce";
+        return this._clientRoot.clientName;
     }
     public get count(): number {
         const countBadge = configAccessor.countBadge;
